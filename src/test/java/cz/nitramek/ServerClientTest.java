@@ -51,7 +51,7 @@ class ServerClientTest {
         Condition condition = lock.newCondition();
         receiver.addMessageListener(message -> {
             lock.lock();
-            Assertions.assertEquals(message, "Hello");
+            Assertions.assertEquals(message, "Hello", "Message was incorrect");
             condition.signal();
             lock.unlock();
 
