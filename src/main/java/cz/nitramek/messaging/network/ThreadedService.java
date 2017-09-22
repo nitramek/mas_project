@@ -1,4 +1,4 @@
-package cz.nitramek.network;
+package cz.nitramek.messaging.network;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-public class ThreadedExecutor {
+public class ThreadedService {
 
     private final WorkingThread server;
     private final ThreadedWorker worker;
@@ -15,7 +15,7 @@ public class ThreadedExecutor {
     private boolean running;
 
 
-    public ThreadedExecutor(ThreadedWorker worker) {
+    public ThreadedService(ThreadedWorker worker) {
         this.worker = worker;
         this.server = new WorkingThread();
     }
@@ -26,7 +26,7 @@ public class ThreadedExecutor {
     }
 
     @SneakyThrows
-    public void shutDown() {
+    public void shutdown() {
         running = false;
         worker.shutdown();
         server.join();
@@ -47,7 +47,7 @@ public class ThreadedExecutor {
                 }
             } catch (Exception e) {
                 if (running) {
-                    log.error("ThreadedExecutor", e);
+                    log.error("ThreadedService", e);
                 }
             } finally {
                 try {

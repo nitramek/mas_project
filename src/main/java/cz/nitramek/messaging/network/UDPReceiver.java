@@ -1,9 +1,11 @@
-package cz.nitramek.network;
+package cz.nitramek.messaging.network;
 
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -16,18 +18,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class UDPReceiver extends UDPWorker {
 
     @Getter
-    private final int port;
+    private InetSocketAddress address;
     private List<MessageListener> listeners;
 
+    @SneakyThrows
     public UDPReceiver(int port) {
-        this.port = port;
+        address = new InetSocketAddress(InetAddress.getLocalHost(), port);
         this.listeners = new CopyOnWriteArrayList<>();
     }
 
 
     @Override
     public void preWork(DatagramChannel channel) throws Exception {
-        channel.socket().bind(new InetSocketAddress(port));
+        log.info("Starting receiving on {}", address.toString());
+        channel.socket().bind(address);
     }
 
     @Override
@@ -36,6 +40,7 @@ public class UDPReceiver extends UDPWorker {
         channel.receive(buffer);
         buffer.flip();
         String message = StandardCharsets.UTF_8.decode(buffer).toString();
+        log.debug("Received message {}", message);
         listeners.forEach(l -> l.onReceive(message));
     }
 

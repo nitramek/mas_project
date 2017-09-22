@@ -2,10 +2,10 @@
 package cz.nitramek;
 
 
-import cz.nitramek.network.Packet;
-import cz.nitramek.network.ThreadedExecutor;
-import cz.nitramek.network.UDPReceiver;
-import cz.nitramek.network.UDPSender;
+import cz.nitramek.messaging.network.Packet;
+import cz.nitramek.messaging.network.ThreadedService;
+import cz.nitramek.messaging.network.UDPReceiver;
+import cz.nitramek.messaging.network.UDPSender;
 import cz.nitramek.utils.NetworkUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -13,8 +13,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -23,8 +21,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 class ServerClientTest {
 
-    private static ThreadedExecutor client;
-    private static ThreadedExecutor server;
+    private static ThreadedService client;
+    private static ThreadedService server;
     private static UDPSender sender;
     private static UDPReceiver receiver;
 
@@ -32,17 +30,17 @@ class ServerClientTest {
     static void prepare() {
         int serverPort = NetworkUtils.nextFreePort();
         receiver = new UDPReceiver(serverPort);
-        server = new ThreadedExecutor(receiver);
+        server = new ThreadedService(receiver);
         server.start();
         sender = new UDPSender();
-        client = new ThreadedExecutor(sender);
+        client = new ThreadedService(sender);
         client.start();
     }
 
     @AfterAll
     static void tearDown() {
-        server.shutDown();
-        client.shutDown();
+        server.shutdown();
+        client.shutdown();
     }
 
     @Test
@@ -57,7 +55,7 @@ class ServerClientTest {
 
         });
 
-        sender.sendPacket(new Packet("Hello".getBytes(StandardCharsets.UTF_8), new InetSocketAddress(InetAddress.getLocalHost(), receiver.getPort())));
+        sender.sendPacket(new Packet("Hello".getBytes(StandardCharsets.UTF_8), receiver.getAddress()));
         lock.lock();
         condition.await();
         lock.unlock();

@@ -1,4 +1,4 @@
-package cz.nitramek.network;
+package cz.nitramek.messaging.network;
 
 import lombok.Value;
 

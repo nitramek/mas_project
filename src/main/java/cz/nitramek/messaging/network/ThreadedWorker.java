@@ -1,4 +1,4 @@
-package cz.nitramek.network;
+package cz.nitramek.messaging.network;
 
 public interface ThreadedWorker {
     void work() throws Exception;

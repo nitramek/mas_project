@@ -1,7 +1,8 @@
-package cz.nitramek.network;
+package cz.nitramek.messaging.network;
 
 
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -10,6 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @ToString
+@Slf4j
 public class UDPSender extends UDPWorker {
 
     private BlockingQueue<Packet> packets;
@@ -22,6 +24,7 @@ public class UDPSender extends UDPWorker {
     public void work(DatagramChannel channel) throws Exception {
         Packet packet = packets.poll(100, TimeUnit.MILLISECONDS);
         if (packet != null) {
+            log.debug("Sending message to {} of size {}", packet.getRecipient(), packet.getBuffer().length);
             ByteBuffer buffer = ByteBuffer.wrap(packet.getBuffer());
             channel.send(buffer, packet.getRecipient());
         }
