@@ -6,16 +6,17 @@ import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
-public class ThreadedService {
+public class ThreadedService<T extends ThreadedWorker> {
 
     private final WorkingThread server;
-    private final ThreadedWorker worker;
+    @Getter
+    private final T worker;
 
     @Getter
     private boolean running;
 
 
-    public ThreadedService(ThreadedWorker worker) {
+    public ThreadedService(T worker) {
         this.worker = worker;
         this.server = new WorkingThread();
     }

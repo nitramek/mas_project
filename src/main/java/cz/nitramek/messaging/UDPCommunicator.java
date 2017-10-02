@@ -15,23 +15,19 @@ import java.util.Optional;
 public class UDPCommunicator implements Communicator {
 
 
-    private UDPSender sender;
-    private UDPReceiver receiver;
-    private ThreadedService receiverService;
-    private ThreadedService senderService;
+    private ThreadedService<UDPReceiver> receiverService;
+    private ThreadedService<UDPSender> senderService;
 
     private Map<Command, MessageCallback> callbacks = new HashMap<>();
 
 
     @Override
     public void start() {
-        sender = new UDPSender();
-        receiver = new UDPReceiver(NetworkUtils.nextFreePort());
-        senderService = new ThreadedService(sender);
-        receiverService = new ThreadedService(receiver);
+        senderService = new ThreadedService<>(new UDPSender());
+        receiverService = new ThreadedService<>(new UDPReceiver(NetworkUtils.nextFreePort()));
         senderService.start();
         receiverService.start();
-        receiver.addMessageListener(this::onReceive);
+        receiverService.getWorker().addMessageListener(this::onReceive);
     }
 
     private void onReceive(String content) {
@@ -45,7 +41,7 @@ public class UDPCommunicator implements Communicator {
     @Override
     public void sendMessage(Command command, InetSocketAddress recipient, String data, File file) {
         Message message = Message.builder()
-                .source(receiver.getAddress())
+                .source(receiverService.getWorker().getAddress())
                 .recipient(recipient)
                 .command(command)
                 .data(data)
@@ -55,7 +51,7 @@ public class UDPCommunicator implements Communicator {
         String datagramContent = MessageSerializer.serialize(message);
         byte[] bytes = datagramContent.getBytes(StandardCharsets.UTF_8);
         Packet packet = new Packet(bytes, message.getRecipient());
-        sender.sendPacket(packet);
+        senderService.getWorker().sendPacket(packet);
     }
 
     @Override
