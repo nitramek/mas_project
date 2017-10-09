@@ -2,10 +2,8 @@ package cz.nitramek
 
 
 import cz.nitramek.agent.Agent
-import lombok.extern.slf4j.Slf4j
 
 
-@Slf4j
 object Main {
 
 

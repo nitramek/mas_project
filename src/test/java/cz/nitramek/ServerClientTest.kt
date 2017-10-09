@@ -1,7 +1,7 @@
 package cz.nitramek
 
 
-import cz.nitramek.messaging.network.Packet
+import cz.nitramek.messaging.network.StringPacket
 import cz.nitramek.messaging.network.ThreadedService
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
@@ -9,7 +9,6 @@ import cz.nitramek.utils.NetworkUtils
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.test.assertTrue
@@ -57,11 +56,12 @@ internal class ServerClientTest {
             }
 
         })
-        sender.sendPacket(Packet("Hello".toByteArray(StandardCharsets.UTF_8), receiver.address))
+        val packet = StringPacket("Hello", receiver.address)
+        sender.sendPacket(packet)
         Thread.sleep(10)
-        sender.sendPacket(Packet("Hello".toByteArray(StandardCharsets.UTF_8), receiver.address))
+        sender.sendPacket(packet)
         Thread.sleep(10)
-        sender.sendPacket(Packet("Hello".toByteArray(StandardCharsets.UTF_8), receiver.address))
+        sender.sendPacket(packet)
         Thread.sleep(10)
 
         lock.lock()

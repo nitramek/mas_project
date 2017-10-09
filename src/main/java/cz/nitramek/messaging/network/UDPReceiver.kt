@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
 
 typealias PacketListener = (message: String, address: InetSocketAddress) -> Unit
 class UDPReceiver(val port: Int) : UDPWorker() {
@@ -18,7 +19,7 @@ class UDPReceiver(val port: Int) : UDPWorker() {
 
     val address: InetSocketAddress = InetSocketAddress(InetAddress.getLocalHost(), port)
     private val listeners: MutableList<PacketListener> = CopyOnWriteArrayList()
-
+    private val messageHandlersPool = Executors.newCachedThreadPool()
 
     override fun preWork(channel: DatagramChannel) {
         log.info("Starting receiving on {}", address.toString())
@@ -32,7 +33,8 @@ class UDPReceiver(val port: Int) : UDPWorker() {
         buffer.flip()
         val message = StandardCharsets.UTF_8.decode(buffer).toString()
         log.debug("Received message {}", message)
-        listeners.forEach { it(message, address) }
+        messageHandlersPool.submit { listeners.forEach { it(message, address) } }
+
     }
 
     fun addMessageListener(listener: PacketListener) {

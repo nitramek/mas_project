@@ -16,23 +16,52 @@ class UDPSender : UDPWorker() {
         val log = LoggerFactory.getLogger(this::class.java)!!
     }
 
-    private val packets: BlockingQueue<Packet> = ArrayBlockingQueue(10)
+    private val packets: BlockingQueue<StringPacket> = ArrayBlockingQueue(10)
 
 
     override fun work(channel: DatagramChannel) {
         val packet = packets.poll(100, TimeUnit.MILLISECONDS)
         if (packet != null) {
-            log.debug("Sending message to {} of size {}", packet.recipient, packet.buffer.size)
-            val buffer = ByteBuffer.wrap(packet.buffer)
+            log.debug("Sending message to {} of ", packet.recipient, packet.str)
+            val buffer = ByteBuffer.wrap(packet.toByteArray())
             channel.send(buffer, packet.recipient)
         }
     }
 
-    fun sendPacket(packet: Packet) {
+    fun sendPacket(packet: StringPacket) {
         packets.add(packet)
     }
 
 
 }
 
-class Packet(val buffer: ByteArray, val recipient: InetSocketAddress)
+class StringPacket(val str: String, val recipient: InetSocketAddress, var retries: Int = 0) {
+
+    fun toByteArray(): ByteArray {
+        return str.toByteArray(Charsets.UTF_8)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StringPacket) return false
+
+        if (str != other.str) return false
+        if (recipient != other.recipient) return false
+
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = str.hashCode()
+        result = 31 * result + recipient.hashCode()
+        return result
+    }
+
+
+    override fun toString(): String {
+        return "StringPacket(str='$str', recipient=$recipient, retries=$retries)"
+    }
+
+
+}

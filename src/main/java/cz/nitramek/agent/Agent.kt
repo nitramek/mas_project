@@ -2,10 +2,7 @@ package cz.nitramek.agent
 
 import cz.nitramek.messaging.Communicator
 import cz.nitramek.messaging.UDPCommunicator
-import cz.nitramek.messaging.message.MessageHandler
-import cz.nitramek.messaging.message.MessagesConverter
-import cz.nitramek.messaging.message.Send
-import cz.nitramek.messaging.message.Store
+import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -21,10 +18,29 @@ class Agent {
     private val communicator: Communicator = UDPCommunicator()
 
 
+    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = hashSetOf()
+
+
     private val messageHandler = object : MessageHandler() {
+        override fun handle(ack: Ack) {
+
+        }
+
+        override fun handle(addAgents: AddAgents) {
+            log.debug("Add Agents command - {}", addAgents.addresses)
+            knownAgentsAdresses.addAll(addAgents.addresses)
+        }
+
+        override fun handle(agents: Agents) {
+            log.debug("Sending Agents")
+
+        }
+
         override fun handle(send: Send) {
-            log.debug("Sending Command")
-            communicator.sendMessage(send.message, send.recipient)
+            log.debug("Sending")
+
+            //pendingMessages.put(MessageInfo(, send.source, send.recipient), MessageInfo.Status.WAITING);
+            communicator.sendMessage(send.message, send.recipient, true)
         }
 
         override fun handle(store: Store) {

@@ -10,13 +10,15 @@ import java.net.InetSocketAddress
  */
 interface Communicator {
 
-    fun sendMessage(message: Message, address: InetSocketAddress)
+    fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean)
 
-    fun sendMessage(message: String, address: InetSocketAddress)
+    fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean)
 
     fun addMessageHandler(handler: MessageHandler)
 
     fun stop()
 
     fun start()
+
+    fun localAddress(): InetSocketAddress
 }
