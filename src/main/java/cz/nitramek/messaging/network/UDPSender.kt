@@ -6,6 +6,7 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class UDPSender {
 
@@ -37,8 +38,10 @@ class UDPSender {
     }
 
     fun shutdown() {
-        channel?.close()
+        pool.awaitTermination(100, TimeUnit.MILLISECONDS)
         pool.shutdownNow()
+        channel?.close()
+
     }
 
 }
