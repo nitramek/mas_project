@@ -3,7 +3,6 @@ package cz.nitramek
 
 import cz.nitramek.agent.Agent
 
-
 object Main {
 
 

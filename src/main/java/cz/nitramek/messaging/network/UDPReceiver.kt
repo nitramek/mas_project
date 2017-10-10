@@ -1,16 +1,19 @@
 package cz.nitramek.messaging.network
 
+import io.netty.bootstrap.Bootstrap
+import io.netty.channel.*
+import io.netty.channel.nio.NioEventLoopGroup
+import io.netty.channel.socket.DatagramPacket
+import io.netty.channel.socket.nio.NioDatagramChannel
 import org.slf4j.LoggerFactory
+
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.nio.ByteBuffer
-import java.nio.channels.DatagramChannel
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executors
+
 
 typealias PacketListener = (message: String, address: InetSocketAddress) -> Unit
-class UDPReceiver(val port: Int) : UDPWorker() {
+class UDPReceiver(port: Int) {
 
     companion object {
         @JvmField
@@ -19,22 +22,43 @@ class UDPReceiver(val port: Int) : UDPWorker() {
 
     val address: InetSocketAddress = InetSocketAddress(InetAddress.getLocalHost(), port)
     private val listeners: MutableList<PacketListener> = CopyOnWriteArrayList()
-    private val messageHandlersPool = Executors.newCachedThreadPool()
 
-    override fun preWork(channel: DatagramChannel) {
-        log.info("Starting receiving on {}", address.toString())
-        channel.socket().bind(address)
+
+    private var channelFuture: ChannelFuture? = null
+
+    fun start() {
+
+        val group = NioEventLoopGroup()
+
+        val b = Bootstrap()
+        b.group(group).channel(NioDatagramChannel::class.java)
+                .option(ChannelOption.SO_BROADCAST, true)
+                .handler(object : ChannelInitializer<NioDatagramChannel>() {
+                    @Throws(Exception::class)
+                    public override fun initChannel(ch: NioDatagramChannel) {
+
+                        val p = ch.pipeline()
+                        p.addLast(object : SimpleChannelInboundHandler<DatagramPacket>() {
+                            override fun messageReceived(ctx: ChannelHandlerContext, packet: DatagramPacket) {
+                                val srcAddr = packet.sender()
+                                val buf = packet.content()
+                                val rcvPktLength = buf.readableBytes()
+                                val rcvPktBuf = ByteArray(rcvPktLength)
+                                buf.readBytes(rcvPktBuf)
+                                val data = String(rcvPktBuf, Charsets.UTF_8)
+                                listeners.forEach { it(data, srcAddr) }
+                            }
+                        })
+                    }
+                })
+        
+        b.bind(address.address, address.port).sync()
+
+
     }
 
-
-    override fun work(datagramChannel: DatagramChannel) {
-        val buffer = ByteBuffer.allocate(512)
-        val source = datagramChannel.receive(buffer) as InetSocketAddress
-        buffer.flip()
-        val message = StandardCharsets.UTF_8.decode(buffer).toString()
-        log.debug("Received message {}", message)
-        messageHandlersPool.submit { listeners.forEach { it(message, address) } }
-
+    fun shutdown() {
+        channelFuture?.channel()?.closeFuture()?.sync()
     }
 
     fun addMessageListener(listener: PacketListener) {

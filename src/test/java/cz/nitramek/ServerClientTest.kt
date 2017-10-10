@@ -18,7 +18,7 @@ internal class ServerClientTest {
     companion object {
 
         private val client: ThreadedService<UDPSender> = ThreadedService(UDPSender())
-        private val server: ThreadedService<UDPReceiver> = ThreadedService(UDPReceiver(NetworkUtils.nextFreePort()))
+        private val server: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
 
 
         @BeforeClass
@@ -40,7 +40,7 @@ internal class ServerClientTest {
     fun helloTest() {
 
         val sender = client.worker
-        val receiver = server.worker
+        val receiver = server
         val counters = intArrayOf(0, 0)
         val lock = ReentrantLock()
         val condition = lock.newCondition()
@@ -58,11 +58,8 @@ internal class ServerClientTest {
         })
         val packet = StringPacket("Hello", receiver.address)
         sender.sendPacket(packet)
-        Thread.sleep(10)
         sender.sendPacket(packet)
-        Thread.sleep(10)
         sender.sendPacket(packet)
-        Thread.sleep(10)
 
         lock.lock()
         condition.await(1, TimeUnit.SECONDS)

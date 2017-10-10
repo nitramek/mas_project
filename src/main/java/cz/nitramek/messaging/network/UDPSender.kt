@@ -7,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class UDPSender : UDPWorker() {
@@ -18,13 +19,16 @@ class UDPSender : UDPWorker() {
 
     private val packets: BlockingQueue<StringPacket> = ArrayBlockingQueue(10)
 
+    private val pool = Executors.newFixedThreadPool(5)
+
 
     override fun work(channel: DatagramChannel) {
-        val packet = packets.poll(100, TimeUnit.MILLISECONDS)
+        val packet = packets.poll(10, TimeUnit.MILLISECONDS)
         if (packet != null) {
-            log.debug("Sending message to {} of ", packet.recipient, packet.str)
+            //log.debug("Sending message to {} of {}", packet.recipient, packet.str)
             val buffer = ByteBuffer.wrap(packet.toByteArray())
             channel.send(buffer, packet.recipient)
+            //log.debug("send")
         }
     }
 

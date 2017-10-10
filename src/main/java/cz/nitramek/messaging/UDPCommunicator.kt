@@ -1,9 +1,6 @@
 package cz.nitramek.messaging
 
-import cz.nitramek.messaging.message.Ack
-import cz.nitramek.messaging.message.Message
-import cz.nitramek.messaging.message.MessageHandler
-import cz.nitramek.messaging.message.MessagesConverter
+import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.StringPacket
 import cz.nitramek.messaging.network.ThreadedService
 import cz.nitramek.messaging.network.UDPReceiver
@@ -11,7 +8,10 @@ import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class UDPCommunicator : Communicator {
 
@@ -22,54 +22,56 @@ class UDPCommunicator : Communicator {
     }
 
     private val senderService: ThreadedService<UDPSender> = ThreadedService(UDPSender())
-    private val receiverService: ThreadedService<UDPReceiver> = ThreadedService(UDPReceiver(NetworkUtils.nextFreePort()))
+    private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
 
-    private val wantAckPackets: ConcurrentMap<StringPacket, ScheduledFuture<Void>> = ConcurrentHashMap()
+    data class Envelope(val source: InetSocketAddress, val recipient: InetSocketAddress, val value: String)
+
+    private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
 
     private val cleanerPool = Executors.newScheduledThreadPool(10)
 
 
     init {
-        receiverService.worker.addMessageListener({ message: String, address: InetSocketAddress ->
-            val msg = converter.strToObj(address, message)
+        receiverService.addMessageListener({ message: String, _: InetSocketAddress ->
+            val msg = converter.strToObj(message)
+            log.debug("Received  {} from {}", msg)
             if (msg !is Ack) {
-                val ack = Ack(address, message)
-                sendMessage(ack, address, false)
+                val ack = Ack(MessageHeader(respondAdress()), message)
+                this.sendMessage(ack, msg.header.source, false)
             }
-            handlers.forEach { handler ->
-                msg.handle(handler)
-            }
+            handlers.forEach(msg::handle)
         })
         handlers.add(object : MessageHandler() {
             override fun handle(ack: Ack) {
-                val packet = StringPacket(ack.message, ack.source)
-                wantAckPackets.remove(packet)?.cancel(true)
-                log.debug("From {} ACKed {} - no longer waiting", ack.message, ack.source)
+                val envelope = Envelope(respondAdress(), ack.header.source, ack.message)
+                val removed = wantAckPackets.remove(envelope)
+                log.debug("ACKED  {} {}", removed, envelope)
             }
         })
 
     }
 
-    private fun sendPacket(packet: StringPacket, acked: Boolean) {
-        if (packet.retries > 5) {
-            log.error("Packet didnt get response from {}", packet.recipient)
-            return
-        }
-        packet.retries++
-        log.debug("Sending {} to {}", packet.str, packet.recipient)
-        senderService.worker.sendPacket(packet)
+    private fun sendPacket(envelope: Envelope, acked: Boolean) {
+        log.debug("Sending {}", envelope)
+        senderService.worker.sendPacket(StringPacket(envelope.value, envelope.recipient))
         if (acked) {
-            val scheduledFuture = cleanerPool.schedule<Void>({
-                if (wantAckPackets.remove(packet) != null) {
-                    //retry sending if the message is still waiting for ack
-                    log.debug("Resending")
-                    sendPacket(packet, true)
-                }
-                null
-            }, 500, TimeUnit.MILLISECONDS) as ScheduledFuture<Void>
-            wantAckPackets.put(packet, scheduledFuture)
+            val retries = wantAckPackets.getOrPut(envelope, { 0 })
+            if (retries < 5) {
+                cleanerPool.schedule({
+                    if (wantAckPackets.containsKey(envelope)) {
+                        //retry sending if the message is still waiting for ack
+                        log.debug("Resending")
+                        sendPacket(envelope, acked)
+                    }
+                }, 2, TimeUnit.SECONDS)
+                wantAckPackets[envelope] = retries + 1
+            } else {
+                log.error("Recipient is not responding on {}", envelope)
+                wantAckPackets.remove(envelope)
+            }
+
         }
 
     }
@@ -81,12 +83,11 @@ class UDPCommunicator : Communicator {
 
 
     override fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean) {
-        val packet = StringPacket(message, address)
-        sendPacket(packet, acked)
+        sendPacket(Envelope(respondAdress(), address, message), acked)
     }
 
-    override fun localAddress(): InetSocketAddress {
-        return receiverService.worker.address
+    override fun respondAdress(): InetSocketAddress {
+        return receiverService.address
     }
 
     override fun addMessageHandler(handler: MessageHandler) {

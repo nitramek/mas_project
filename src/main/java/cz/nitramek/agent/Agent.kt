@@ -1,10 +1,12 @@
 package cz.nitramek.agent
 
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import cz.nitramek.messaging.Communicator
 import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
-import java.net.InetAddress
 import java.net.InetSocketAddress
 
 
@@ -20,10 +22,15 @@ class Agent {
 
     private val knownAgentsAdresses: MutableSet<InetSocketAddress> = hashSetOf()
 
+    private val gson = Gson()
+
+    private val converter = MessagesConverter()
+
 
     private val messageHandler = object : MessageHandler() {
-        override fun handle(ack: Ack) {
 
+        override fun handle(unknownMessage: UnknownMessage) {
+            //Result(communicator.respondAdress(), "fail", "Unknown command", unknownMessage)
         }
 
         override fun handle(addAgents: AddAgents) {
@@ -33,13 +40,26 @@ class Agent {
 
         override fun handle(agents: Agents) {
             log.debug("Sending Agents")
+            val arrayOfAgents = knownAgentsAdresses.map {
+                val jsonObject = JsonObject()
+                jsonObject.addProperty("ip", it.address.hostAddress)
+                jsonObject.addProperty("port", it.port)
+                jsonObject
+            }.fold(JsonArray(), JsonArray::insert)
+            val resultMsg = Result(
+                    MessageHeader(communicator.respondAdress()),
+                    "sucess", gson.toJson(arrayOfAgents),
+                    converter.objToStr(agents))
+            communicator.sendMessage(resultMsg, agents.header.source, true)
+        }
+
+        override fun handle(result: Result) {
 
         }
 
         override fun handle(send: Send) {
             log.debug("Sending")
 
-            //pendingMessages.put(MessageInfo(, send.source, send.recipient), MessageInfo.Status.WAITING);
             communicator.sendMessage(send.message, send.recipient, true)
         }
 
@@ -53,7 +73,7 @@ class Agent {
     }
 
     fun localMessage(message: String) {
-        val msg = MessagesConverter().strToObj(InetSocketAddress(InetAddress.getLoopbackAddress(), 0), message)
+        val msg = MessagesConverter().strToObj(message)
         msg.handle(messageHandler)
     }
 

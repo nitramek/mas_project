@@ -10,63 +10,72 @@ class MessagesConverter {
 
     private val jsonParser = JsonParser()
 
-    fun strToObj(source: InetSocketAddress, json: String): Message {
-        val jsonObject = jsonParser.parse(json).asJsonObject
-        val type = jsonObject["type"].asString
+    fun strToObj(json: String): Message {
+        val obj = jsonParser.parse(json).asJsonObject
+        val type = obj["type"].asString
+        val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
         when (type) {
-            STORE.name -> return Store(source, jsonObject["value"].asString)
-            RESULT.name -> return Result(source, jsonObject["status"].asString, jsonObject["value"].asString, jsonObject["message"].toString())
+            STORE.name -> return Store(header, obj["value"].asString)
+            RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
             SEND.name -> {
-                val recipient = InetSocketAddress(jsonObject["ip"].asString, jsonObject["port"].asInt)
-                val message = jsonObject["message"].toString()
-                return Send(source, recipient, message)
+                val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
+                val message = obj["message"].toString()
+                return Send(header, recipient, message)
             }
-            ACK.name -> return Ack(source, jsonObject["message"].toString())
-            AGENTS.name -> return Agents(source)
+            ACK.name -> return Ack(header, obj["message"].toString())
+            AGENTS.name -> return Agents(header)
             ADD_AGENTS.name -> {
-                val agentsArray = jsonObject["agents"].asJsonArray
+                val agentsArray = obj["agents"].asJsonArray
                 val agents = agentsArray.map { it.asJsonObject }.map { InetSocketAddress(it["ip"].asString, it["port"].asInt) }
-                return AddAgents(source, agents)
+                return AddAgents(header, agents)
             }
-            else -> return UnknownMessage(source, jsonObject.toString())
+            else -> return UnknownMessage(header, type, obj.toString())
         }
 
 
     }
 
-    fun objToStr(message: Message): String {
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("type", message.type)
+    fun objToJson(message: Message): JsonObject {
+        val obj = JsonObject()
+        obj.addProperty("type", message.type)
+        obj.addProperty("sourceIp", message.header.source.address.hostAddress)
+        obj.addProperty("sourcePort", message.header.source.port)
 
         when (message) {
             is Store -> {
-                jsonObject.addProperty("value", message.value)
+                obj.addProperty("value", message.value)
             }
             is Result -> {
-                jsonObject.addProperty("status", message.status)
-                jsonObject.add("message", jsonParser.parse(message.message))
-                jsonObject.addProperty("result", message.result)
+                obj.addProperty("status", message.status)
+                obj.addProperty("message", message.message)
+                obj.addProperty("result", message.result)
             }
             is Send -> {
-                jsonObject.addProperty("ip", message.recipient.hostString)
-                jsonObject.addProperty("port", message.recipient.port)
+                obj.addProperty("ip", message.recipient.hostString)
+                obj.addProperty("port", message.recipient.port)
             }
             is Ack -> {
-                jsonObject.add("message", jsonParser.parse(message.message))
+                obj.add("message", jsonParser.parse(message.message))
             }
             is AddAgents -> {
                 val agents: JsonArray = message.addresses.map {
-                    val agentAddress = JsonObject()
-                    agentAddress.addProperty("ip", it.hostString)
-                    agentAddress.addProperty("port", it.port)
-                    agentAddress
-                }.fold(JsonArray(), { arr, address -> arr.add(address); arr; })
-                jsonObject.add("agents", agents)
+                    JsonObject().apply {
+                        addProperty("ip", it.hostString)
+                        addProperty("port", it.port)
+                    }
+                }.fold(JsonArray(), JsonArray::insert)
+                obj.add("agents", agents)
             }
             is UnknownMessage -> {
-                return message.message
+                return jsonParser.parse(message.message).asJsonObject
             }
         }
-        return jsonObject.toString()
+        return obj
+    }
+
+    fun objToStr(message: Message): String {
+        return objToJson(message).toString()
     }
 }
+
+

@@ -20,5 +20,5 @@ interface Communicator {
 
     fun start()
 
-    fun localAddress(): InetSocketAddress
+    fun respondAdress(): InetSocketAddress
 }
