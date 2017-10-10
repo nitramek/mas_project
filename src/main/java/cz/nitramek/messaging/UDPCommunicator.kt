@@ -1,8 +1,6 @@
 package cz.nitramek.messaging
 
 import cz.nitramek.messaging.message.*
-import cz.nitramek.messaging.network.StringPacket
-import cz.nitramek.messaging.network.ThreadedService
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
@@ -21,7 +19,7 @@ class UDPCommunicator : Communicator {
         val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
     }
 
-    private val senderService: ThreadedService<UDPSender> = ThreadedService(UDPSender())
+    private val senderService: UDPSender = UDPSender()
     private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
@@ -55,7 +53,7 @@ class UDPCommunicator : Communicator {
 
     private fun sendPacket(envelope: Envelope, acked: Boolean) {
         log.debug("Sending {}", envelope)
-        senderService.worker.sendPacket(StringPacket(envelope.value, envelope.recipient))
+        senderService.sendPacket(envelope.value, envelope.recipient)
         if (acked) {
             val retries = wantAckPackets.getOrPut(envelope, { 0 })
             if (retries < 5) {

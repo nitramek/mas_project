@@ -25,11 +25,9 @@ class UDPReceiver(port: Int) {
 
 
     private var channelFuture: ChannelFuture? = null
+    private val group = NioEventLoopGroup()
 
     fun start() {
-
-        val group = NioEventLoopGroup()
-
         val b = Bootstrap()
         b.group(group).channel(NioDatagramChannel::class.java)
                 .option(ChannelOption.SO_BROADCAST, true)
@@ -40,6 +38,7 @@ class UDPReceiver(port: Int) {
                         val p = ch.pipeline()
                         p.addLast(object : SimpleChannelInboundHandler<DatagramPacket>() {
                             override fun messageReceived(ctx: ChannelHandlerContext, packet: DatagramPacket) {
+                                log.debug("Incoming message")
                                 val srcAddr = packet.sender()
                                 val buf = packet.content()
                                 val rcvPktLength = buf.readableBytes()
@@ -51,14 +50,16 @@ class UDPReceiver(port: Int) {
                         })
                     }
                 })
-        
+
         b.bind(address.address, address.port).sync()
+        log.info("Started UDPReceiver on {}", address)
 
 
     }
 
     fun shutdown() {
-        channelFuture?.channel()?.closeFuture()?.sync()
+        group.shutdownGracefully()
+        channelFuture?.channel()?.closeFuture()?.sync()?.await()
     }
 
     fun addMessageListener(listener: PacketListener) {

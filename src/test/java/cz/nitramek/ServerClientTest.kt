@@ -1,8 +1,6 @@
 package cz.nitramek
 
 
-import cz.nitramek.messaging.network.StringPacket
-import cz.nitramek.messaging.network.ThreadedService
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
@@ -17,7 +15,7 @@ import kotlin.test.assertTrue
 internal class ServerClientTest {
     companion object {
 
-        private val client: ThreadedService<UDPSender> = ThreadedService(UDPSender())
+        private val client: UDPSender = UDPSender()
         private val server: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
 
 
@@ -39,7 +37,7 @@ internal class ServerClientTest {
     @Test
     fun helloTest() {
 
-        val sender = client.worker
+        val sender = client
         val receiver = server
         val counters = intArrayOf(0, 0)
         val lock = ReentrantLock()
@@ -56,10 +54,10 @@ internal class ServerClientTest {
             }
 
         })
-        val packet = StringPacket("Hello", receiver.address)
-        sender.sendPacket(packet)
-        sender.sendPacket(packet)
-        sender.sendPacket(packet)
+
+        sender.sendPacket("Hello", receiver.address)
+        sender.sendPacket("Hello", receiver.address)
+        sender.sendPacket("Hello", receiver.address)
 
         lock.lock()
         condition.await(1, TimeUnit.SECONDS)

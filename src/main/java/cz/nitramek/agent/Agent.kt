@@ -8,6 +8,7 @@ import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
+import java.util.concurrent.CopyOnWriteArraySet
 
 
 class Agent {
@@ -20,17 +21,23 @@ class Agent {
     private val communicator: Communicator = UDPCommunicator()
 
 
-    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = hashSetOf()
+    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = CopyOnWriteArraySet()
 
     private val gson = Gson()
 
     private val converter = MessagesConverter()
 
+    val bindedAddress = communicator.respondAdress()
+
+    var runnning: Boolean = false
+
 
     private val messageHandler = object : MessageHandler() {
 
         override fun handle(unknownMessage: UnknownMessage) {
-            //Result(communicator.respondAdress(), "fail", "Unknown command", unknownMessage)
+            if (unknownMessage.type == "HALT") {
+                this@Agent.stop()
+            }
         }
 
         override fun handle(addAgents: AddAgents) {
@@ -41,10 +48,10 @@ class Agent {
         override fun handle(agents: Agents) {
             log.debug("Sending Agents")
             val arrayOfAgents = knownAgentsAdresses.map {
-                val jsonObject = JsonObject()
-                jsonObject.addProperty("ip", it.address.hostAddress)
-                jsonObject.addProperty("port", it.port)
-                jsonObject
+                JsonObject().apply {
+                    addProperty("ip", it.address.hostAddress)
+                    addProperty("port", it.port)
+                }
             }.fold(JsonArray(), JsonArray::insert)
             val resultMsg = Result(
                     MessageHeader(communicator.respondAdress()),
@@ -55,6 +62,7 @@ class Agent {
 
         override fun handle(result: Result) {
 
+            log.info("Received result {} - {}", result.status, result.result)
         }
 
         override fun handle(send: Send) {
@@ -79,10 +87,16 @@ class Agent {
 
     fun start() {
         communicator.start()
+        this.runnning = true
     }
 
     fun stop() {
-        communicator.stop()
+        if (this.runnning) {
+            communicator.stop()
+            log.debug("Agent stopped")
+            this.runnning = false
+        }
     }
+
 
 }

@@ -2,40 +2,55 @@ package cz.nitramek.messaging.message
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
+import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.Message.MessageType.*
+import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 
 class MessagesConverter {
 
     private val jsonParser = JsonParser()
 
+    companion object {
+        @JvmField
+        val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
+    }
+
+
     fun strToObj(json: String): Message {
-        val obj = jsonParser.parse(json).asJsonObject
-        val type = obj["type"].asString
-        val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
-        when (type) {
-            STORE.name -> return Store(header, obj["value"].asString)
-            RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
-            SEND.name -> {
-                val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
-                val message = obj["message"].toString()
-                return Send(header, recipient, message)
+        try {
+            val obj = jsonParser.parse(json).asJsonObject
+            val type = obj["type"].asString
+            val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
+            when (type) {
+                STORE.name -> return Store(header, obj["value"].asString)
+                RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
+                SEND.name -> {
+                    val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
+                    val message = obj["message"].toString()
+                    return Send(header, recipient, message)
+                }
+                ACK.name -> return Ack(header, obj["message"].toString())
+                AGENTS.name -> return Agents(header)
+                ADD_AGENTS.name -> {
+                    val agentsArray = obj["agents"].asJsonArray
+                    val agents = agentsArray.map { it.asJsonObject }.map { InetSocketAddress(it["ip"].asString, it["port"].asInt) }
+                    return AddAgents(header, agents)
+                }
+                else -> return UnknownMessage(header, type, obj.toString())
             }
-            ACK.name -> return Ack(header, obj["message"].toString())
-            AGENTS.name -> return Agents(header)
-            ADD_AGENTS.name -> {
-                val agentsArray = obj["agents"].asJsonArray
-                val agents = agentsArray.map { it.asJsonObject }.map { InetSocketAddress(it["ip"].asString, it["port"].asInt) }
-                return AddAgents(header, agents)
-            }
-            else -> return UnknownMessage(header, type, obj.toString())
+        } catch (exception: JsonParseException) {
+            log.error(exception.message, exception.printStackTrace())
+            throw exception
         }
 
 
     }
 
     fun objToJson(message: Message): JsonObject {
+
         val obj = JsonObject()
         obj.addProperty("type", message.type)
         obj.addProperty("sourceIp", message.header.source.address.hostAddress)
