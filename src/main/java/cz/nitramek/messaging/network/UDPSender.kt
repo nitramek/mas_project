@@ -10,10 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class UDPSender {
 
-    companion object {
-        @JvmField
-        val log = LoggerFactory.getLogger(this::class.java)!!
-    }
+    private val log = LoggerFactory.getLogger(this::class.java)!!
 
     private var channel: DatagramChannel? = null
     private val pool = Executors.newFixedThreadPool(5)

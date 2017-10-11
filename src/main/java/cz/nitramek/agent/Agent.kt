@@ -12,11 +12,8 @@ import java.util.concurrent.CopyOnWriteArraySet
 
 
 class Agent {
+    private val log = LoggerFactory.getLogger(this::class.java)!!
 
-    companion object {
-        @JvmField
-        val log = LoggerFactory.getLogger(this::class.java)!!
-    }
 
     private val communicator: Communicator = UDPCommunicator()
 

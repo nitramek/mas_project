@@ -12,11 +12,7 @@ import java.net.InetSocketAddress
 class MessagesConverter {
 
     private val jsonParser = JsonParser()
-
-    companion object {
-        @JvmField
-        val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
-    }
+    private val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
 
 
     fun strToObj(json: String): Message {

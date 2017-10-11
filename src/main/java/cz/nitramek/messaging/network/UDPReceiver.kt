@@ -14,11 +14,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 typealias PacketListener = (message: String, address: InetSocketAddress) -> Unit
 class UDPReceiver(port: Int) {
-
-    companion object {
-        @JvmField
-        val log = LoggerFactory.getLogger(this::class.java)!!
-    }
+    val log = LoggerFactory.getLogger(this::class.java)!!
+    
 
     val address: InetSocketAddress = InetSocketAddress(InetAddress.getLocalHost(), port)
     private val listeners: MutableList<PacketListener> = CopyOnWriteArrayList()

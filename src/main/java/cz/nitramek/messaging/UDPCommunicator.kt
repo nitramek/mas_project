@@ -13,14 +13,11 @@ import java.util.concurrent.TimeUnit
 
 class UDPCommunicator : Communicator {
 
+    private val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
 
-    companion object {
-        @JvmField
-        val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
-    }
 
     private val senderService: UDPSender = UDPSender()
-    private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
+    private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.nextFreePort())
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
 

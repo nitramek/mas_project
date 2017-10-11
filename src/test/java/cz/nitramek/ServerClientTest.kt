@@ -16,7 +16,7 @@ internal class ServerClientTest {
     companion object {
 
         private val client: UDPSender = UDPSender()
-        private val server: UDPReceiver = UDPReceiver(NetworkUtils.instance.nextFreePort())
+        private val server: UDPReceiver = UDPReceiver(NetworkUtils.nextFreePort())
 
 
         @BeforeClass
