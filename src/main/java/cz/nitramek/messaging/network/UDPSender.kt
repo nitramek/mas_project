@@ -1,6 +1,7 @@
 package cz.nitramek.messaging.network
 
 
+import cz.nitramek.agent.SENDER_THREAD_COUNT
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -13,7 +14,7 @@ class UDPSender {
     private val log = LoggerFactory.getLogger(this::class.java)!!
 
     private var channel: DatagramChannel? = null
-    private val pool = Executors.newFixedThreadPool(5)
+    private val pool = Executors.newFixedThreadPool(SENDER_THREAD_COUNT)
 
     fun start() {
         channel = DatagramChannel.open()

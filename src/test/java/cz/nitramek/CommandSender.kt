@@ -12,7 +12,8 @@ object Sender {
     fun main(args: Array<String>) {
         val sender = UDPSender()
         sender.start()
-        val msg = """{"type":"HALT", "sourceIp": "", "sourcePort": 0}"""
+//        val msg = """{"type":"HALT", "sourceIp": "", "sourcePort": 0}"""
+        val msg = """{"type":"ADD_AGENTS","sourcePort":53156,"sourceIp":"192.168.47.1","agents":[{"ip":"192.168.47.1",port:53156}]}"""
         sender.sendPacket(msg, InetSocketAddress("192.168.47.1", 53156))
         sender.shutdown()
     }

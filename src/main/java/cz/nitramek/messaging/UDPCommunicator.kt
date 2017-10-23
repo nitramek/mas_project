@@ -1,5 +1,7 @@
 package cz.nitramek.messaging
 
+import cz.nitramek.agent.MAX_RETRIES
+import cz.nitramek.agent.RESEND_DELAY
 import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
@@ -25,7 +27,7 @@ class UDPCommunicator : Communicator {
 
     private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
 
-    private val cleanerPool = Executors.newScheduledThreadPool(10)
+    private val cleanerPool = Executors.newScheduledThreadPool(1)
 
 
     init {
@@ -53,14 +55,14 @@ class UDPCommunicator : Communicator {
         senderService.sendPacket(envelope.value, envelope.recipient)
         if (acked) {
             val retries = wantAckPackets.getOrPut(envelope, { 0 })
-            if (retries < 5) {
+            if (retries < MAX_RETRIES) {
                 cleanerPool.schedule({
                     if (wantAckPackets.containsKey(envelope)) {
                         //retry sending if the message is still waiting for ack
                         log.debug("Resending")
                         sendPacket(envelope, acked)
                     }
-                }, 2, TimeUnit.SECONDS)
+                }, RESEND_DELAY, TimeUnit.MILLISECONDS)
                 wantAckPackets[envelope] = retries + 1
             } else {
                 log.error("Recipient is not responding on {}", envelope)

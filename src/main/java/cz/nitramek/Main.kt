@@ -9,6 +9,12 @@ object Main {
     //{"type":"SEND","ip":"192.168.47.1","port":53156,"sourcePort":1000,"sourceIp":"192.168.47.1",message:{"type":"ADD_AGENTS","sourcePort":53156,"sourceIp":"192.168.47.1","agents":[{"ip":"192.168.47.1",port:53156}]}}
     @JvmStatic
     fun main(args: Array<String>) {
+//        val pp = PartedPackage(AgentPackage.parts.size, "a.jar")
+//        IntStream.range(0, AgentPackage.parts.size).parallel()
+//                .forEach {
+//                    pp.addPart(it, AgentPackage.parts[it])
+//                }
+//        pp.saveToFileSystem()
         val agent = Agent()
         agent.start()
     }

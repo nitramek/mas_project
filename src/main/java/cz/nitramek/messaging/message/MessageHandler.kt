@@ -15,4 +15,7 @@ abstract class MessageHandler {
 
     open fun handle(unknownMessage: UnknownMessage) {}
 
+    open fun handle(aPackage: Package) {}
+    open fun handle(execute: Execute) {}
+
 }

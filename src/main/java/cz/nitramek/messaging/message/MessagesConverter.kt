@@ -17,6 +17,7 @@ class MessagesConverter {
 
     fun strToObj(json: String): Message {
         try {
+            log.debug("Received length - ${json.length}")
             val obj = jsonParser.parse(json).asJsonObject
             val type = obj["type"].asString
             val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
@@ -34,6 +35,9 @@ class MessagesConverter {
                     val agentsArray = obj["agents"].asJsonArray
                     val agents = agentsArray.map { it.asJsonObject }.map { InetSocketAddress(it["ip"].asString, it["port"].asInt) }
                     return AddAgents(header, agents)
+                }
+                PACKAGE.name -> {
+                    return Package(header, obj["data"].asString, obj["order"].asInt, obj["fileName"].asString, obj["partsCount"].asInt)
                 }
                 else -> return UnknownMessage(header, type, obj.toString())
             }
@@ -76,6 +80,12 @@ class MessagesConverter {
                     }
                 }.fold(JsonArray(), JsonArray::insert)
                 obj.add("agents", agents)
+            }
+            is Package -> {
+                obj.addProperty("data", message.data)
+                obj.addProperty("fileName", message.fileName)
+                obj.addProperty("order", message.order)
+                obj.addProperty("partsCount", message.partsCount)
             }
             is UnknownMessage -> {
                 return jsonParser.parse(message.message).asJsonObject

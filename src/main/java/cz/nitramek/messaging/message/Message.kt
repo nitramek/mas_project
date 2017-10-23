@@ -8,6 +8,8 @@ interface Message {
         STORE("STORE"),
         AGENTS("AGENTS"),
         ADD_AGENTS("ADD_AGENTS"),
+        EXECUTE("EXECUTE"),
+        PACKAGE("PACKAGE")
     }
 
     val header: MessageHeader
