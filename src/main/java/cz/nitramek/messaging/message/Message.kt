@@ -9,7 +9,8 @@ interface Message {
         AGENTS("AGENTS"),
         ADD_AGENTS("ADD_AGENTS"),
         EXECUTE("EXECUTE"),
-        PACKAGE("PACKAGE")
+        PACKAGE("PACKAGE"),
+        HALT("HALT")
     }
 
     val header: MessageHeader

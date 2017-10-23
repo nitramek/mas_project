@@ -13,6 +13,10 @@ import java.util.concurrent.CopyOnWriteArraySet
 
 
 class Agent {
+
+    init {
+        ensureDirectoryExistency(RECIEVED_PACKAGES_DIR)
+    }
     private val log = LoggerFactory.getLogger(this::class.java)!!
 
 
@@ -38,29 +42,40 @@ class Agent {
 
 
         override fun handle(aPackage: Package) {
-            val packages = receivedParts.getOrPut(aPackage.header.source, { mutableMapOf() })
-            val partedPackage = packages.getOrPut(aPackage.fileName, { PartedPackage(aPackage.partsCount, aPackage.fileName) })
+            val source = aPackage.header.source
+            val packages = receivedParts.getOrPut(source, { mutableMapOf() })
+            val fileName = aPackage.fileName
+            val partedPackage = packages.getOrPut(fileName, { PartedPackage(aPackage.partsCount, fileName) })
             partedPackage.addPart(aPackage.order, aPackage.data)
             if (partedPackage.isCompleted()) {
-                savedPackages[aPackage.header.source] = partedPackage.saveToFileSystem()
+                receivedParts.remove(source)
+                savedPackages[source] = partedPackage.saveToFileSystem()
+                val myHeader = MessageHeader(communicator.respondAdress())
+                val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "")
+                communicator.sendMessage(resultMsg, source, true)
+//                val haltMsg = Halt(myHeader)
+//                communicator.sendMessage(haltMsg, source, false)
+
             }
         }
 
         override fun handle(execute: Execute) {
-            Runtime.getRuntime().exec(execute.command)
+            log.info("Executing {} from {}", execute.command, execute.header.source)
+            Runtime.getRuntime().exec(execute.command, arrayOf(), RECIEVED_PACKAGES_DIR.toFile())
         }
 
+        override fun handle(halt: Halt) {
+            this@Agent.stop()
+        }
 
         override fun handle(unknownMessage: UnknownMessage) {
-            if (unknownMessage.type == "HALT") {
-                this@Agent.stop()
-            }
+
         }
 
         override fun handle(addAgents: AddAgents) {
             log.debug("Add Agents command - {}", addAgents.addresses)
             knownAgentsAdresses.addAll(addAgents.addresses)
-            sendMyself(addAgents.addresses[0])
+            addAgents.addresses.forEach { sendMyself(it) }
         }
 
         override fun handle(agents: Agents) {

@@ -34,10 +34,7 @@ class PartedPackage(val partCount: Int, val name: String) {
         val dataString = parts.fold(StringBuilder(), StringBuilder::append).toString()
         val decoder = Base64.getDecoder()
         val bytes = decoder.decode(dataString)
-        val partsDir = Paths.get("receivedParts")
-        if (!Files.exists(partsDir)) {
-            Files.createDirectory(partsDir)
-        }
+        RECIEVED_PACKAGES_DIR.resolve(name)
         val path = Paths.get("receivedParts", name)
         Files.deleteIfExists(path)
         val file = Files.createFile(path)

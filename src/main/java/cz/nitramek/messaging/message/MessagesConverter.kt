@@ -39,11 +39,19 @@ class MessagesConverter {
                 PACKAGE.name -> {
                     return Package(header, obj["data"].asString, obj["order"].asInt, obj["fileName"].asString, obj["partsCount"].asInt)
                 }
+                EXECUTE.name -> {
+                    return Execute(header, obj["command"].asString)
+                }
+                HALT.name -> {
+                    return Halt(header)
+                }
                 else -> return UnknownMessage(header, type, obj.toString())
             }
         } catch (exception: JsonParseException) {
             log.error(exception.message, exception.printStackTrace())
             throw exception
+        } catch (e: NullPointerException) {
+            throw e
         }
 
 
@@ -86,6 +94,12 @@ class MessagesConverter {
                 obj.addProperty("fileName", message.fileName)
                 obj.addProperty("order", message.order)
                 obj.addProperty("partsCount", message.partsCount)
+            }
+            is Execute -> {
+                obj.addProperty("command", message.command)
+            }
+            is Halt -> {
+                //nothing extra is needed
             }
             is UnknownMessage -> {
                 return jsonParser.parse(message.message).asJsonObject

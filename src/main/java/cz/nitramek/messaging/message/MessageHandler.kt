@@ -17,5 +17,6 @@ abstract class MessageHandler {
 
     open fun handle(aPackage: Package) {}
     open fun handle(execute: Execute) {}
+    open fun handle(halt: Halt) {}
 
 }
