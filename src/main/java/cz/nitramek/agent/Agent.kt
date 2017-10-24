@@ -17,6 +17,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
      * Utilities
      */
     private val log = LoggerFactory.getLogger(this::class.java)!!
+    private val storeLog = LoggerFactory.getLogger("storeLogger")!!
     private val gson = Gson()
     private val converter = MessagesConverter()
 
@@ -108,6 +109,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
         override fun handle(store: Store) {
             log.debug("Storing {}", store.value)
+            storeLog.info(store.value)
         }
     }
 

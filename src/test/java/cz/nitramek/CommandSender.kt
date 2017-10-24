@@ -16,13 +16,15 @@ object Sender {
         val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111))
         val converter = MessagesConverter()
         sender.start()
-        val testAgentAddress = InetSocketAddress("192.168.47.1", 51021)
+        val testAgentAddress = InetSocketAddress("192.168.47.1", 54402)
         val addAgents = AddAgents(mockSource, arrayListOf(testAgentAddress))
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_JAR_NAME")
+        val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
 //        sender.sendPacket(converter.objToStr(addAgents), testAgentAddress)
-        sender.sendPacket(converter.objToStr(execute), testAgentAddress)
+//        sender.sendPacket(converter.objToStr(execute), testAgentAddress)
 //        sender.sendPacket(converter.objToStr(halt), testAgentAddress)
+        sender.sendPacket(converter.objToStr(store), testAgentAddress)
         sender.shutdown()
     }
 }
