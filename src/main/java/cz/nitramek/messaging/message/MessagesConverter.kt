@@ -20,7 +20,8 @@ class MessagesConverter {
             log.debug("Received length - ${json.length}")
             val obj = jsonParser.parse(json).asJsonObject
             val type = obj["type"].asString
-            val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
+
+            val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt), obj["tag"].asString)
             when (type) {
                 STORE.name -> return Store(header, obj["value"].asString)
                 RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
@@ -63,6 +64,7 @@ class MessagesConverter {
         obj.addProperty("type", message.type)
         obj.addProperty("sourceIp", message.header.source.address.hostAddress)
         obj.addProperty("sourcePort", message.header.source.port)
+        obj.addProperty("tag", message.header.tag)
 
         when (message) {
             is Store -> {
