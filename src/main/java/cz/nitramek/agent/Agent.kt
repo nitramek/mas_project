@@ -8,15 +8,11 @@ import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArraySet
 
 
 class Agent {
 
-    init {
-        ensureDirectoryExistency(RECIEVED_PACKAGES_DIR)
-    }
     private val log = LoggerFactory.getLogger(this::class.java)!!
 
 
@@ -36,8 +32,6 @@ class Agent {
 
     val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
 
-    val savedPackages = mutableMapOf<InetSocketAddress, Path>()
-
     private val messageHandler = object : MessageHandler() {
 
 
@@ -49,7 +43,7 @@ class Agent {
             partedPackage.addPart(aPackage.order, aPackage.data)
             if (partedPackage.isCompleted()) {
                 receivedParts.remove(source)
-                savedPackages[source] = partedPackage.saveToFileSystem()
+//                savedPackages[source] = partedPackage.partsAsBytes()
                 val myHeader = MessageHeader(communicator.respondAdress())
                 val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "")
                 communicator.sendMessage(resultMsg, source, true)
@@ -61,10 +55,11 @@ class Agent {
 
         override fun handle(execute: Execute) {
             log.info("Executing {} from {}", execute.command, execute.header.source)
-            Runtime.getRuntime().exec(execute.command, arrayOf(), RECIEVED_PACKAGES_DIR.toFile())
+//            Runtime.getRuntime().exec(execute.command, arrayOf(), RECIEVED_PACKAGES_DIR.toFile())
         }
 
         override fun handle(halt: Halt) {
+            log.info("Halting :/ - address of the bastard {}", halt.header.source)
             this@Agent.stop()
         }
 
@@ -96,7 +91,6 @@ class Agent {
         }
 
         override fun handle(result: Result) {
-
             log.info("Received result {} - {}", result.status, result.result)
         }
 
@@ -117,22 +111,24 @@ class Agent {
 
     fun sendMyself(recipient: InetSocketAddress) {
         log.debug("Sending myself to the other side")
-        AgentPackage.parts.forEachIndexed { index, part ->
-            communicator.sendMessage(
-                    Package(
-                            MessageHeader(bindedAddress),
-                            part,
-                            index,
-                            AGENT_JAR_NAME,
-                            AgentPackage.parts.size
-                    ), recipient, true)
-        }
+//        AgentPackage.parts.forEachIndexed { index, part ->
+//            communicator.sendMessage(
+//                    Package(
+//                            MessageHeader(bindedAddress),
+//                            part,
+//                            index,
+//                            AGENT_JAR_NAME,
+//                            AgentPackage.parts.size
+//                    ), recipient, true)
+//        }
     }
 
     fun localMessage(message: String) {
         val msg = MessagesConverter().strToObj(message)
         msg.handle(messageHandler)
     }
+
+    fun addressAsRepoName(address: InetSocketAddress) = "${address.hostString}_${address.port}"
 
     fun start() {
         communicator.start()

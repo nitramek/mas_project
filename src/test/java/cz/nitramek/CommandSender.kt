@@ -1,8 +1,6 @@
 package cz.nitramek
 
-import cz.nitramek.messaging.message.Execute
-import cz.nitramek.messaging.message.MessageHeader
-import cz.nitramek.messaging.message.MessagesConverter
+import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPSender
 import java.net.InetSocketAddress
 
@@ -14,19 +12,16 @@ object Sender {
     @JvmStatic
     fun main(args: Array<String>) {
         val sender = UDPSender()
-        sender.start()
-        val msghalt = """{"type":"HALT", "sourceIp": "", "sourcePort": 0}"""
-        val msg = """{"type":"ADD_AGENTS","sourcePort":53156,"sourceIp":"192.168.47.1","agents":[{"ip":"192.168.47.1",port:53156}]}"""
-        val testAgentAddress = InetSocketAddress("192.168.47.1", 53156)
-//        sender.sendPacket(msg, testAgentAddress)
-//        Thread.sleep(TimeUnit.SECONDS.toMillis(10))
+        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111))
         val converter = MessagesConverter()
-        val execute = Execute(MessageHeader(InetSocketAddress("127.0.0.1", 11111)), "java -jar agent_nitramek.jar")
-
+        sender.start()
+        val testAgentAddress = InetSocketAddress("192.168.47.1", 59668)
+        val addAgents = AddAgents(mockSource, arrayListOf(testAgentAddress))
+        val halt = Halt(mockSource)
+        val execute = Execute(mockSource, "java -jar agent_nitramek.jar")
+//        sender.sendPacket(converter.objToStr(addAgents), testAgentAddress)
         sender.sendPacket(converter.objToStr(execute), testAgentAddress)
-
-
-//        sender.sendPacket(msghalt, testAgentAddress)
+//        sender.sendPacket(converter.objToStr(halt), testAgentAddress)
         sender.shutdown()
     }
 }
