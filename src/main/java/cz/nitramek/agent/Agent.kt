@@ -35,6 +35,11 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
     init {
         println(bindedAddress)
+        if (loggerAddress != null) {
+            communicator.sendMessage(Store(MessageHeader(bindedAddress),
+                    "START ${bindedAddress.address.hostAddress} ${bindedAddress.port} $THIS_AGENT_TAG"),
+                    loggerAddress, true)
+        }
     }
 
     private val messageHandler = object : MessageHandler() {
@@ -67,6 +72,14 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
         override fun handle(halt: Halt) {
             log.info("Halting :/ - address of the bastard {}", halt.header.source)
+            if (loggerAddress != null) {
+                val halterIp = halt.header.source.address.hostAddress
+                val halterPort = halt.header.source.port
+                communicator.sendMessage(
+                        Store(MessageHeader(bindedAddress),
+                                "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
+                        loggerAddress, true)
+            }
             this@Agent.stop()
         }
 
