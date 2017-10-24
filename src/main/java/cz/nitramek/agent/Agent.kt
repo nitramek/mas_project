@@ -11,26 +11,30 @@ import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
 
-class Agent {
+class Agent(val loggerAddress: InetSocketAddress? = null) {
 
+    /**
+     * Utilities
+     */
     private val log = LoggerFactory.getLogger(this::class.java)!!
-
+    private val gson = Gson()
+    private val converter = MessagesConverter()
 
     private val communicator: Communicator = UDPCommunicator()
 
-
-    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = CopyOnWriteArraySet()
-
-    private val gson = Gson()
-
-    private val converter = MessagesConverter()
-
+    /**
+     * State
+     */
     val bindedAddress = communicator.respondAdress()
+    var isRunning: Boolean = false
+        private set
+    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = CopyOnWriteArraySet()
+    private val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
+    private val repository = FileRepository(bindedAddress, executablePath())
 
-    var runnning: Boolean = false
-
-
-    val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
+    init {
+        println(bindedAddress)
+    }
 
     private val messageHandler = object : MessageHandler() {
 
@@ -43,7 +47,7 @@ class Agent {
             partedPackage.addPart(aPackage.order, aPackage.data)
             if (partedPackage.isCompleted()) {
                 receivedParts.remove(source)
-//                savedPackages[source] = partedPackage.partsAsBytes()
+                repository.savePackage(addressAsRepoName(source), partedPackage)
                 val myHeader = MessageHeader(communicator.respondAdress())
                 val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "")
                 communicator.sendMessage(resultMsg, source, true)
@@ -54,8 +58,10 @@ class Agent {
         }
 
         override fun handle(execute: Execute) {
-            log.info("Executing {} from {}", execute.command, execute.header.source)
-//            Runtime.getRuntime().exec(execute.command, arrayOf(), RECIEVED_PACKAGES_DIR.toFile())
+            val repoName = addressAsRepoName(execute.header.source)
+            val repoPath = repository.repositoryPath(repoName)
+            log.info("Executing {} from {} in {}", execute.command, execute.header.source, repoPath)
+            Runtime.getRuntime().exec(execute.command, arrayOf(), repoPath.toAbsolutePath().toFile())
         }
 
         override fun handle(halt: Halt) {
@@ -111,16 +117,16 @@ class Agent {
 
     fun sendMyself(recipient: InetSocketAddress) {
         log.debug("Sending myself to the other side")
-//        AgentPackage.parts.forEachIndexed { index, part ->
-//            communicator.sendMessage(
-//                    Package(
-//                            MessageHeader(bindedAddress),
-//                            part,
-//                            index,
-//                            AGENT_JAR_NAME,
-//                            AgentPackage.parts.size
-//                    ), recipient, true)
-//        }
+        repository.agentInParts.forEachIndexed { index, part ->
+            communicator.sendMessage(
+                    Package(
+                            MessageHeader(bindedAddress),
+                            part,
+                            index,
+                            AGENT_JAR_NAME,
+                            repository.agentInParts.size
+                    ), recipient, true)
+        }
     }
 
     fun localMessage(message: String) {
@@ -130,16 +136,17 @@ class Agent {
 
     fun addressAsRepoName(address: InetSocketAddress) = "${address.hostString}_${address.port}"
 
+
     fun start() {
         communicator.start()
-        this.runnning = true
+        this.isRunning = true
     }
 
     fun stop() {
-        if (this.runnning) {
+        if (this.isRunning) {
             communicator.stop()
             log.debug("Agent stopped")
-            this.runnning = false
+            this.isRunning = false
         }
     }
 

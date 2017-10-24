@@ -42,7 +42,7 @@ class AgentTester {
     fun testHalt() {
         val haltMessage = """{"type":"HALT", "sourceIp": "", "sourcePort": 0}"""
         sendCommands(haltMessage)
-        assertFalse(agent.runnning, "Agent is still running")
+        assertFalse(agent.isRunning, "Agent is still running")
     }
 
     @Test

@@ -1,9 +1,7 @@
 package cz.nitramek.agent
 
 import cz.nitramek.Main
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.OutputStream
+import java.io.*
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,9 +11,10 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
+
 fun executablePath(): Path {
     val path = Paths.get(Main::class.java.protectionDomain.codeSource.location.toURI())
-    return if (path.endsWith("jar")) {
+    return if (path.toFile().absolutePath.endsWith("jar")) {
         path
     } else {
         Paths.get("target", "Agents-1-jar-with-dependencies.jar")
@@ -27,13 +26,18 @@ class FileRepository(private val localAddress: InetSocketAddress, private val ex
 
     private val rootRepository = Paths.get(RECIEVED_PACKAGES_DIR)
 
+    fun repositoryPath(repositoryName: String) = rootRepository.resolve(repositoryName)
+
     val agentInParts: List<String>
 
     init {
         ensureDirExistance(rootRepository)
+        clean()
+        ensureDirExistance(rootRepository)
         val zipInMemory = ByteArrayOutputStream(2516582)
         createPackageAsZip(zipInMemory)
         agentInParts = toBase64Part(zipInMemory.toByteArray())
+
     }
 
 
@@ -81,4 +85,21 @@ class FileRepository(private val localAddress: InetSocketAddress, private val ex
             writer.flush()
         }
     }
+
+    fun clean() {
+        deleteRecursive(rootRepository.toFile())
+    }
+
+
+    fun deleteRecursive(path: File): Boolean {
+        if (!path.exists()) throw FileNotFoundException(path.absolutePath)
+        var ret = true
+        if (path.isDirectory) {
+            for (f in path.listFiles()!!) {
+                ret = ret && deleteRecursive(f)
+            }
+        }
+        return ret && path.delete()
+    }
+
 }
