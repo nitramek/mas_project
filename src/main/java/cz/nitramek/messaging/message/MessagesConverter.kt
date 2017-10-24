@@ -1,6 +1,5 @@
 package cz.nitramek.messaging.message
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
@@ -32,11 +31,6 @@ class MessagesConverter {
                 }
                 ACK.name -> return Ack(header, obj["message"].toString())
                 AGENTS.name -> return Agents(header)
-                ADD_AGENTS.name -> {
-                    val agentsArray = obj["agents"].asJsonArray
-                    val agents = agentsArray.map { it.asJsonObject }.map { InetSocketAddress(it["ip"].asString, it["port"].asInt) }
-                    return AddAgents(header, agents)
-                }
                 PACKAGE.name -> {
                     return Package(header, obj["data"].asString, obj["order"].asInt, obj["fileName"].asString, obj["partsCount"].asInt)
                 }
@@ -81,15 +75,6 @@ class MessagesConverter {
             }
             is Ack -> {
                 obj.add("message", jsonParser.parse(message.message))
-            }
-            is AddAgents -> {
-                val agents: JsonArray = message.addresses.map {
-                    JsonObject().apply {
-                        addProperty("ip", it.hostString)
-                        addProperty("port", it.port)
-                    }
-                }.fold(JsonArray(), JsonArray::insert)
-                obj.add("agents", agents)
             }
             is Package -> {
                 obj.addProperty("data", message.data)

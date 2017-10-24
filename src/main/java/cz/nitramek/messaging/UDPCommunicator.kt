@@ -8,10 +8,7 @@ import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 
 class UDPCommunicator : Communicator {
 
@@ -25,7 +22,10 @@ class UDPCommunicator : Communicator {
 
     data class Envelope(val source: InetSocketAddress, val recipient: InetSocketAddress, val value: String)
 
+
     private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
+
+    override val addressBook = ConcurrentSkipListSet<InetSocketAddress>()
 
     private val cleanerPool = Executors.newScheduledThreadPool(1)
 
@@ -33,6 +33,10 @@ class UDPCommunicator : Communicator {
     init {
         receiverService.addMessageListener({ message: String, _: InetSocketAddress ->
             val msg = converter.strToObj(message)
+            val isNewAddress = addressBook.add(msg.header.source)
+            if (isNewAddress) {
+                handlers.forEach { it.newAgentFound(msg.header.source) }
+            }
             log.debug("Received  {} from {}", msg)
             if (msg !is Ack) {
                 val ack = Ack(MessageHeader(respondAdress()), message)
@@ -67,6 +71,8 @@ class UDPCommunicator : Communicator {
             } else {
                 log.error("Recipient is not responding on {}", envelope)
                 wantAckPackets.remove(envelope)
+                addressBook.remove(envelope.recipient)
+                //address cuoldnt have been reached so we just remove the agent from know the agentbook
             }
 
         }

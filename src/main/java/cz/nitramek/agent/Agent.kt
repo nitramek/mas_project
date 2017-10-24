@@ -8,7 +8,6 @@ import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
-import java.util.concurrent.CopyOnWriteArraySet
 
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
 class Agent(val loggerAddress: InetSocketAddress? = null) {
@@ -29,7 +28,6 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
     val bindedAddress = communicator.respondAdress()
     var isRunning: Boolean = false
         private set
-    private val knownAgentsAdresses: MutableSet<InetSocketAddress> = CopyOnWriteArraySet()
     private val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
     private val repository = FileRepository(bindedAddress, executablePath())
 
@@ -44,6 +42,9 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
     private val messageHandler = object : MessageHandler() {
 
+        override fun newAgentFound(address: InetSocketAddress) {
+            sendMyself(address)
+        }
 
         override fun handle(aPackage: Package) {
             val source = aPackage.header.source
@@ -88,21 +89,15 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             if (amIAgentLogger() && type == "KILLALL") {
                 log.info("I will prevail thus logger am I! Killing all pesky agents")
                 val halt = Halt(MessageHeader(bindedAddress))
-                knownAgentsAdresses.forEach {
+                communicator.addressBook.forEach {
                     communicator.sendMessage(halt, it, true)
                 }
             }
         }
 
-        override fun handle(addAgents: AddAgents) {
-            log.debug("Add Agents command - {}", addAgents.addresses)
-            knownAgentsAdresses.addAll(addAgents.addresses)
-            addAgents.addresses.forEach { sendMyself(it) }
-        }
-
         override fun handle(agents: Agents) {
             log.debug("Sending Agents")
-            val arrayOfAgents = knownAgentsAdresses.map {
+            val arrayOfAgents = communicator.addressBook.map {
                 JsonObject().apply {
                     addProperty("ip", it.address.hostAddress)
                     addProperty("port", it.port)
@@ -129,13 +124,6 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
         override fun handle(store: Store) {
             log.debug("Storing {}", store.value)
-            if (amIAgentLogger()) {
-                if (store.value.startsWith("END")) {
-                    knownAgentsAdresses.remove(store.header.source)
-                } else {
-                    knownAgentsAdresses.add(store.header.source)
-                }
-            }
             storeLog.info(store.value)
         }
     }

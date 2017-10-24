@@ -1,5 +1,7 @@
 package cz.nitramek.messaging.message
 
+import java.net.InetSocketAddress
+
 abstract class MessageHandler {
     open fun handle(send: Send) {}
 
@@ -11,12 +13,12 @@ abstract class MessageHandler {
 
     open fun handle(agents: Agents) {}
 
-    open fun handle(addAgents: AddAgents) {}
-
     open fun handle(unknownMessage: UnknownMessage) {}
 
     open fun handle(aPackage: Package) {}
     open fun handle(execute: Execute) {}
     open fun handle(halt: Halt) {}
+
+    open fun newAgentFound(address: InetSocketAddress) {}
 
 }

@@ -21,4 +21,6 @@ interface Communicator {
     fun start()
 
     fun respondAdress(): InetSocketAddress
+
+    val addressBook: Set<InetSocketAddress>
 }

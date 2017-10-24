@@ -18,7 +18,7 @@ object Sender {
         val converter = MessagesConverter()
         sender.start()
         val testAgentAddress = InetSocketAddress("192.168.47.1", 55664)
-        val addAgents = AddAgents(mockSource, arrayListOf(testAgentAddress))
+        val storeSomething = Store(mockSource, "potato")
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_JAR_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
