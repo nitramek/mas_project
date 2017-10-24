@@ -31,12 +31,10 @@ class UDPCommunicator : Communicator {
 
 
     init {
+
         receiverService.addMessageListener({ message: String, _: InetSocketAddress ->
             val msg = converter.strToObj(message)
-            val isNewAddress = addressBook.add(msg.header.source)
-            if (isNewAddress) {
-                handlers.forEach { it.newAgentFound(msg.header.source) }
-            }
+            checkNewAgentAddress(msg)
             log.debug("Received  {} from {}", msg)
             if (msg !is Ack) {
                 val ack = Ack(MessageHeader(respondAdress()), message)
@@ -46,12 +44,21 @@ class UDPCommunicator : Communicator {
         })
         handlers.add(object : MessageHandler() {
             override fun handle(ack: Ack) {
+                checkNewAgentAddress(ack)
                 val envelope = Envelope(respondAdress(), ack.header.source, ack.message)
                 val removed = wantAckPackets.remove(envelope)
                 log.debug("ACKED  {} {}", removed, envelope)
+
+
             }
         })
+    }
 
+    private fun checkNewAgentAddress(msg: Message) {
+        val isNewAddress = addressBook.add(msg.header.source)
+        if (isNewAddress) {
+            handlers.forEach { it.newAgentFound(msg.header.source) }
+        }
     }
 
     private fun sendPacket(envelope: Envelope, acked: Boolean) {

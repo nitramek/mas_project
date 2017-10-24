@@ -10,6 +10,9 @@ import java.net.InetSocketAddress
  */
 interface Communicator {
 
+    /**
+     * Sends message to address, if the message acked it will add the address to addressList
+     */
     fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean)
 
     fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean)

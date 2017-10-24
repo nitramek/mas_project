@@ -8,6 +8,8 @@ import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
+import java.nio.file.Files
+import java.nio.file.Paths
 
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
 class Agent(val loggerAddress: InetSocketAddress? = null) {
@@ -31,12 +33,21 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
     private val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
     private val repository = FileRepository(bindedAddress, executablePath())
 
+    private val localHeader = MessageHeader(bindedAddress)
+
     init {
         println(bindedAddress)
         if (loggerAddress != null) {
-            communicator.sendMessage(Store(MessageHeader(bindedAddress),
+            communicator.sendMessage(Store(localHeader,
                     "START ${bindedAddress.address.hostAddress} ${bindedAddress.port} $THIS_AGENT_TAG"),
                     loggerAddress, true)
+        }
+        val configFile = Paths.get(CONFIG_FILE_NAME)
+        if (Files.exists(configFile)) {
+            val configFileLine = Files.readAllLines(configFile)[0]
+            val parts = configFileLine.split(":")
+            val pappaAddress = InetSocketAddress(parts[0], parts[1].toInt())
+            communicator.sendMessage(Agents(localHeader), pappaAddress, true)
         }
     }
 
@@ -56,7 +67,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                 receivedParts.remove(source)
                 repository.savePackage(addressAsRepoName(source), partedPackage)
                 val myHeader = MessageHeader(communicator.respondAdress())
-                val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "")
+                val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "{}")
                 communicator.sendMessage(resultMsg, source, true)
 //                val haltMsg = Halt(myHeader)
 //                communicator.sendMessage(haltMsg, source, false)
@@ -77,7 +88,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                 val halterIp = halt.header.source.address.hostAddress
                 val halterPort = halt.header.source.port
                 communicator.sendMessage(
-                        Store(MessageHeader(bindedAddress),
+                        Store(localHeader,
                                 "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
                         loggerAddress, true)
             }
@@ -88,7 +99,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             val type = unknownMessage.type
             if (amIAgentLogger() && type == "KILLALL") {
                 log.info("I will prevail thus logger am I! Killing all pesky agents")
-                val halt = Halt(MessageHeader(bindedAddress))
+                val halt = Halt(localHeader)
                 communicator.addressBook.forEach {
                     communicator.sendMessage(halt, it, true)
                 }
@@ -139,7 +150,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         repository.agentInParts.forEachIndexed { index, part ->
             communicator.sendMessage(
                     Package(
-                            MessageHeader(bindedAddress),
+                            localHeader,
                             part,
                             index,
                             AGENT_JAR_NAME,
@@ -147,6 +158,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                     ), recipient, true)
         }
     }
+
 
     fun localMessage(message: String) {
         val msg = MessagesConverter().strToObj(message)
