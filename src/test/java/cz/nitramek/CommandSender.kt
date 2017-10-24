@@ -1,5 +1,6 @@
 package cz.nitramek
 
+import com.google.gson.JsonObject
 import cz.nitramek.agent.AGENT_JAR_NAME
 import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPSender
@@ -16,14 +17,20 @@ object Sender {
         val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111))
         val converter = MessagesConverter()
         sender.start()
-        val testAgentAddress = InetSocketAddress("192.168.47.1", 55536)
+        val testAgentAddress = InetSocketAddress("192.168.47.1", 55664)
         val addAgents = AddAgents(mockSource, arrayListOf(testAgentAddress))
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_JAR_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
 //        sender.sendPacket(converter.objToStr(addAgents), testAgentAddress)
 //        sender.sendPacket(converter.objToStr(execute), testAgentAddress)
-        sender.sendPacket(converter.objToStr(halt), testAgentAddress)
+        val killall = JsonObject().apply {
+            addProperty("type", "KILLALL")
+            addProperty("sourceIp", "127.0.0.1")
+            addProperty("sourcePort", 80)
+            addProperty("tag", "potato")
+        }
+        sender.sendPacket(killall.toString(), testAgentAddress)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
         sender.shutdown()
     }

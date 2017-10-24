@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArraySet
 
-
+//TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
 class Agent(val loggerAddress: InetSocketAddress? = null) {
 
     /**
@@ -84,7 +84,14 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         }
 
         override fun handle(unknownMessage: UnknownMessage) {
-
+            val type = unknownMessage.type
+            if (amIAgentLogger() && type == "KILLALL") {
+                log.info("I will prevail thus logger am I! Killing all pesky agents")
+                val halt = Halt(MessageHeader(bindedAddress))
+                knownAgentsAdresses.forEach {
+                    communicator.sendMessage(halt, it, true)
+                }
+            }
         }
 
         override fun handle(addAgents: AddAgents) {
@@ -122,9 +129,18 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
         override fun handle(store: Store) {
             log.debug("Storing {}", store.value)
+            if (amIAgentLogger()) {
+                if (store.value.startsWith("END")) {
+                    knownAgentsAdresses.remove(store.header.source)
+                } else {
+                    knownAgentsAdresses.add(store.header.source)
+                }
+            }
             storeLog.info(store.value)
         }
     }
+
+    private fun amIAgentLogger() = loggerAddress == null
 
     init {
         communicator.addMessageHandler(messageHandler)
