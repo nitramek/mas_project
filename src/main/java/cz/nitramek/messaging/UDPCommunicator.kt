@@ -25,7 +25,7 @@ class UDPCommunicator : Communicator {
 
     private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
 
-    override val addressBook = ConcurrentSkipListSet<InetSocketAddress>()
+    override val addressBook = ConcurrentSkipListSet<InetSocketAddress>(Comparator.comparing(InetSocketAddress::toString))
 
     private val cleanerPool = Executors.newScheduledThreadPool(1)
 

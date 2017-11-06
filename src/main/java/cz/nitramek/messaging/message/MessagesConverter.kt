@@ -40,6 +40,9 @@ class MessagesConverter {
                 HALT.name -> {
                     return Halt(header)
                 }
+                DUPLICATE.name -> {
+                    return Duplicate(header, InetSocketAddress(obj["ip"].asString, obj["port"].asInt))
+                }
                 else -> return UnknownMessage(header, type, obj.toString())
             }
         } catch (exception: JsonParseException) {
@@ -72,6 +75,7 @@ class MessagesConverter {
             is Send -> {
                 obj.addProperty("ip", message.recipient.hostString)
                 obj.addProperty("port", message.recipient.port)
+                obj.add("message", jsonParser.parse(message.message))
             }
             is Ack -> {
                 obj.add("message", jsonParser.parse(message.message))
@@ -90,6 +94,10 @@ class MessagesConverter {
             }
             is UnknownMessage -> {
                 return jsonParser.parse(message.message).asJsonObject
+            }
+            is Duplicate -> {
+                obj.addProperty("ip", message.recipient.hostString)
+                obj.addProperty("port", message.recipient.port)
             }
         }
         return obj

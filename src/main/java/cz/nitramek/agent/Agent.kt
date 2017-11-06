@@ -54,7 +54,12 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
     private val messageHandler = object : MessageHandler() {
 
         override fun newAgentFound(address: InetSocketAddress) {
-            sendMyself(address)
+
+        }
+
+
+        override fun handle(duplicate: Duplicate) {
+            sendMyself(duplicate.recipient)
         }
 
         override fun handle(aPackage: Package) {

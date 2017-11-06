@@ -18,7 +18,9 @@ abstract class MessageHandler {
     open fun handle(aPackage: Package) {}
     open fun handle(execute: Execute) {}
     open fun handle(halt: Halt) {}
+    open fun handle(duplicate: Duplicate) {}
 
     open fun newAgentFound(address: InetSocketAddress) {}
+
 
 }
