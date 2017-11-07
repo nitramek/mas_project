@@ -16,7 +16,7 @@ object Sender {
         val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111))
         val converter = MessagesConverter()
         sender.start()
-        val testAgentAddress = InetSocketAddress("192.168.47.1", 60846)
+        val testAgentAddress = InetSocketAddress("192.168.0.2", 56595)
         val dup = Duplicate(MessageHeader(testAgentAddress), testAgentAddress)
         val sendDup = Send(mockSource, testAgentAddress, converter.objToStr(dup))
         val storeSomething = Store(mockSource, "potato")
@@ -34,6 +34,7 @@ object Sender {
 //        sender.sendPacket(killall.toString(), testAgentAddress)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
         sender.sendPacket(converter.objToJson(sendDup).toString(), testAgentAddress)
+//        sender.sendPacket(converter.objToJson(storeSomething).toString(), testAgentAddress)
         sender.shutdown()
     }
 }

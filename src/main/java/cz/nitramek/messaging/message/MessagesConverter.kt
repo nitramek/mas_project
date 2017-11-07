@@ -3,7 +3,6 @@ package cz.nitramek.messaging.message
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
-import cz.nitramek.messaging.UDPCommunicator
 import cz.nitramek.messaging.message.Message.MessageType.*
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
@@ -11,25 +10,25 @@ import java.net.InetSocketAddress
 class MessagesConverter {
 
     private val jsonParser = JsonParser()
-    private val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
+    private val log = LoggerFactory.getLogger("message")!!
 
 
     fun strToObj(json: String): Message {
         try {
-            log.debug("Received length - ${json.length}")
+//            log.debug("Received length - ${json.length}")
+//            log.debug("{}", json)
             val obj = jsonParser.parse(json).asJsonObject
-            val type = obj["type"].asString
-
+            val type = obj["type"].asString.toUpperCase()
             val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt), obj["tag"].asString)
             when (type) {
                 STORE.name -> return Store(header, obj["value"].asString)
                 RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
                 SEND.name -> {
                     val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
-                    val message = obj["message"].toString()
+                    val message = obj["message"].asString
                     return Send(header, recipient, message)
                 }
-                ACK.name -> return Ack(header, obj["message"].toString())
+                ACK.name -> return Ack(header, obj["message"].asString)
                 AGENTS.name -> return Agents(header)
                 PACKAGE.name -> {
                     return Package(header, obj["data"].asString, obj["order"].asInt, obj["fileName"].asString, obj["partsCount"].asInt)
@@ -56,7 +55,7 @@ class MessagesConverter {
     }
 
     fun objToJson(message: Message): JsonObject {
-
+//        log.debug("{}", message)
         val obj = JsonObject()
         obj.addProperty("type", message.type)
         obj.addProperty("sourceIp", message.header.source.address.hostAddress)
@@ -75,10 +74,10 @@ class MessagesConverter {
             is Send -> {
                 obj.addProperty("ip", message.recipient.hostString)
                 obj.addProperty("port", message.recipient.port)
-                obj.add("message", jsonParser.parse(message.message))
+                obj.addProperty("message", message.message)
             }
             is Ack -> {
-                obj.add("message", jsonParser.parse(message.message))
+                obj.addProperty("message", message.message)
             }
             is Package -> {
                 obj.addProperty("data", message.data)

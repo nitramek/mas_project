@@ -1,13 +1,13 @@
 package cz.nitramek.messaging.network
 
 import cz.nitramek.agent.RECEIVER_THREAD_COUNT
+import cz.nitramek.utils.NetworkUtils
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.*
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.DatagramPacket
 import io.netty.channel.socket.nio.NioDatagramChannel
 import org.slf4j.LoggerFactory
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit
 typealias PacketListener = (message: String, address: InetSocketAddress) -> Unit
 class UDPReceiver(port: Int) {
     val log = LoggerFactory.getLogger(this::class.java)!!
-    
 
-    val address: InetSocketAddress = InetSocketAddress(InetAddress.getLocalHost(), port)
+
+    val address: InetSocketAddress = InetSocketAddress(NetworkUtils.localAddres(), port)
     private val listeners: MutableList<PacketListener> = CopyOnWriteArrayList()
 
 
