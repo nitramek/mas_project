@@ -14,7 +14,7 @@ class FileRepositoryTest {
 
     @Test
     fun testSavePackage() {
-        val mockExecutable = Paths.get(AGENT_JAR_NAME)
+        val mockExecutable = Paths.get(AGENT_PACKAGE_NAME)
         val rootRepoPath = Paths.get(RECIEVED_PACKAGES_DIR)
         val testRepoPath = Paths.get(RECIEVED_PACKAGES_DIR, "test")
         val jarInRepo = Paths.get(RECIEVED_PACKAGES_DIR, "test", AGENT_JAR_NAME)
@@ -38,7 +38,7 @@ class FileRepositoryTest {
 
         assertTrue(Files.exists(rootRepoPath), "Directory $RECIEVED_PACKAGES_DIR wasnt created rootRepo ")
         assertTrue(Files.exists(testRepoPath), "$RECIEVED_PACKAGES_DIR/test wasnt created testRepo")
-        assertTrue(Files.exists(jarInRepo), "File $RECIEVED_PACKAGES_DIR/test/$AGENT_JAR_NAME wasnt created  wasnt created ")
+        assertTrue(Files.exists(jarInRepo), "File $RECIEVED_PACKAGES_DIR/test/$AGENT_PACKAGE_NAME wasnt created  wasnt created ")
         assertTrue(Files.exists(configFileInRepo), "File $RECIEVED_PACKAGES_DIR/test/$CONFIG_FILE_NAME wasnt created  wasnt created ")
 
         sequenceOf(mockExecutable, configFileInRepo, jarInRepo, testRepoPath, rootRepoPath)

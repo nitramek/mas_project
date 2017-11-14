@@ -5,6 +5,6 @@ data class PackageReceived(override val header: MessageHeader) : Message {
         handler.handle(this)
     }
 
-    override val type: String = Message.MessageType.PACKAGE_RECEIVED.name
+    override val type: String = Message.MessageType.PACKAGE_RECEIVED.type
 
 }

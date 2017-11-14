@@ -161,7 +161,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                             localHeader,
                             part,
                             index,
-                            AGENT_JAR_NAME,
+                            AGENT_PACKAGE_NAME,
                             repository.agentInParts.size
                     ), recipient, true)
         }

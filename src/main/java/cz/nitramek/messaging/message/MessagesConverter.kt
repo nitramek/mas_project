@@ -42,7 +42,7 @@ class MessagesConverter {
                 DUPLICATE.name -> {
                     return Duplicate(header, InetSocketAddress(obj["ip"].asString, obj["port"].asInt))
                 }
-                PACKAGE_RECEIVED.name -> {
+                PACKAGE_RECEIVED.type -> {
                     return PackageReceived(header)
                 }
                 else -> return UnknownMessage(header, type, obj.toString())

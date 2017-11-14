@@ -1,7 +1,7 @@
 package cz.nitramek.messaging.message
 
 interface Message {
-    enum class MessageType(type: String) {
+    enum class MessageType(val type: String) {
         SEND("SEND"),
         ACK("ACK"),
         RESULT("RESULT"),
@@ -12,7 +12,7 @@ interface Message {
         PACKAGE("PACKAGE"),
         HALT("HALT"),
         DUPLICATE("DUPLICATE"),
-        PACKAGE_RECEIVED("PACKAGE_RECEIVED")
+        PACKAGE_RECEIVED("PACKAGERECEIVED")
 
     }
 
