@@ -21,6 +21,7 @@ abstract class MessageHandler {
     open fun handle(duplicate: Duplicate) {}
 
     open fun newAgentFound(address: InetSocketAddress) {}
+    open fun handle(packageReceived: PackageReceived) {}
 
 
 }

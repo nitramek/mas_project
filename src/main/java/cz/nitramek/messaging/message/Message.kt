@@ -11,7 +11,8 @@ interface Message {
         EXECUTE("EXECUTE"),
         PACKAGE("PACKAGE"),
         HALT("HALT"),
-        DUPLICATE("DUPLICATE")
+        DUPLICATE("DUPLICATE"),
+        PACKAGE_RECEIVED("PACKAGE_RECEIVED")
 
     }
 

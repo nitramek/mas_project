@@ -72,7 +72,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                 receivedParts.remove(source)
                 repository.savePackage(addressAsRepoName(source), partedPackage)
                 val myHeader = MessageHeader(communicator.respondAdress())
-                val resultMsg = Result(myHeader, "sucess", "FILE_SAVED", "{}")
+                val resultMsg = PackageReceived(myHeader)
                 communicator.sendMessage(resultMsg, source, true)
 //                val haltMsg = Halt(myHeader)
 //                communicator.sendMessage(haltMsg, source, false)
@@ -120,6 +120,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
                 }
             }.fold(JsonArray(), JsonArray::insert)
 
+
             val resultMsg = Result(
                     MessageHeader(communicator.respondAdress()),
                     "sucess", gson.toJson(arrayOfAgents),
@@ -135,7 +136,9 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         override fun handle(send: Send) {
             log.debug("Sending")
 
-            communicator.sendMessage(send.message, send.recipient, true)
+            val messageSendNoLocalParams = send.message
+            val messageToSend = converter.addHeaderParams(messageSendNoLocalParams, localHeader)
+            communicator.sendMessage(messageToSend, send.recipient, true)
         }
 
         override fun handle(store: Store) {

@@ -1,19 +1,18 @@
 package cz.nitramek.utils
 
-import java.net.NetworkInterface
-import java.net.ServerSocket
-
 object NetworkUtils {
 
     fun nextFreePort(): Int {
 //        return 53156
-        return ServerSocket(0).use { it.localPort }
+//        return ServerSocket(0).use { it.localPort }
+        return 11111
     }
 
-    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence().filter { !it.isVirtual }.filter { !it.isLoopback }
-            .filter { it.isUp }
-            .filter { !isVmwareMac(it.hardwareAddress) }
-            .first().inetAddresses.asSequence().first()
+    fun localAddres() = "192.168.43.125"
+//    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence().filter { !it.isVirtual }.filter { !it.isLoopback }
+//            .filter { it.isUp }
+//            .filter { !isVmwareMac(it.hardwareAddress) }
+//            .first().inetAddresses.asSequence().first()
 
     private fun isVmwareMac(mac: ByteArray): Boolean {
         val invalidMacs = arrayOf(byteArrayOf(0x00, 0x05, 0x69), //VMWare

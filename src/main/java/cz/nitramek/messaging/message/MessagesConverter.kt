@@ -42,6 +42,9 @@ class MessagesConverter {
                 DUPLICATE.name -> {
                     return Duplicate(header, InetSocketAddress(obj["ip"].asString, obj["port"].asInt))
                 }
+                PACKAGE_RECEIVED.name -> {
+                    return PackageReceived(header)
+                }
                 else -> return UnknownMessage(header, type, obj.toString())
             }
         } catch (exception: JsonParseException) {
@@ -52,6 +55,14 @@ class MessagesConverter {
         }
 
 
+    }
+
+    fun addHeaderParams(jsonString: String, header: MessageHeader): String {
+        val jObject = jsonParser.parse(jsonString).asJsonObject
+        jObject.addProperty("sourceIp", header.source.address.hostAddress)
+        jObject.addProperty("sourcePort", header.source.port)
+        jObject.addProperty("tag", header.tag)
+        return jObject.toString()
     }
 
     fun objToJson(message: Message): JsonObject {
@@ -97,6 +108,9 @@ class MessagesConverter {
             is Duplicate -> {
                 obj.addProperty("ip", message.recipient.hostString)
                 obj.addProperty("port", message.recipient.port)
+            }
+            is PackageReceived -> {
+                //nothing extra
             }
         }
         return obj
