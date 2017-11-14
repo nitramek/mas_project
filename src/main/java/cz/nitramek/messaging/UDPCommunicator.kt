@@ -38,6 +38,7 @@ class UDPCommunicator : Communicator {
             log.debug("Received  {} from {}", msg)
             if (msg !is Ack) {
                 val ack = Ack(MessageHeader(respondAdress()), message)
+//                log.info("Ack - {}", ack.message)
                 this.sendMessage(ack, msg.header.source, false)
             }
             handlers.forEach(msg::handle)
@@ -47,6 +48,7 @@ class UDPCommunicator : Communicator {
                 checkNewAgentAddress(ack)
                 val envelope = Envelope(respondAdress(), ack.header.source, ack.message)
                 val removed = wantAckPackets.remove(envelope)
+//                log.info("Ack - {}", ack.message)
                 log.debug("ACKED  {} {}", removed, envelope)
 
 

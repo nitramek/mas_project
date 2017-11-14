@@ -1,18 +1,25 @@
 package cz.nitramek.utils
 
+import java.net.BindException
+import java.net.DatagramSocket
+import java.net.NetworkInterface
+
 object NetworkUtils {
 
-    fun nextFreePort(): Int {
+    fun nextFreePort(start: Int = 11111): Int {
 //        return 53156
-//        return ServerSocket(0).use { it.localPort }
-        return 11111
+        return try {
+            DatagramSocket(start).use { it.localPort }
+        } catch (e: BindException) {
+            nextFreePort(start + 1)
+        }
     }
 
-    fun localAddres() = "192.168.43.125"
-//    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence().filter { !it.isVirtual }.filter { !it.isLoopback }
-//            .filter { it.isUp }
-//            .filter { !isVmwareMac(it.hardwareAddress) }
-//            .first().inetAddresses.asSequence().first()
+    //    fun localAddres() = "192.168.43.125"
+    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence().filter { !it.isVirtual }.filter { !it.isLoopback }
+            .filter { it.isUp }
+            .filter { !isVmwareMac(it.hardwareAddress) }
+            .first().inetAddresses.asSequence().first()
 
     private fun isVmwareMac(mac: ByteArray): Boolean {
         val invalidMacs = arrayOf(byteArrayOf(0x00, 0x05, 0x69), //VMWare
@@ -21,12 +28,7 @@ object NetworkUtils {
                 byteArrayOf(0x00, 0x50, 0x56)              //VMWare
         )
 
-        for (invalid in invalidMacs) {
-            if (invalid[0] == mac[0] && invalid[1] == mac[1] && invalid[2] == mac[2])
-                return true
-        }
-
-        return false
+        return invalidMacs.any { it[0] == mac[0] && it[1] == mac[1] && it[2] == mac[2] }
     }
 
 

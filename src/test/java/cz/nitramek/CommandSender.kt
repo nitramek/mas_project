@@ -25,7 +25,7 @@ object Sender {
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_PACKAGE_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
 
-        val otherAgentAddress = InetSocketAddress("192.168.43.130", 22222)
+        val otherAgentAddress = InetSocketAddress("192.168.0.2", 11112)
         val duplicateToMyself = Duplicate(mockSource, otherAgentAddress)
         val sendDupToOther = Send(mockSource, testAgentAddress, converter.objToStr(duplicateToMyself))
         val sendSendToMyself = Send(mockSource, otherAgentAddress, converter.objToStr(sendDupToOther))
