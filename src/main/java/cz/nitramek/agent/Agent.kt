@@ -62,6 +62,11 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             sendMyself(duplicate.recipient)
         }
 
+        override fun handle(packageReceived: PackageReceived) {
+            val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME")
+            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+        }
+
         override fun handle(aPackage: Package) {
             val source = aPackage.header.source
             val packages = receivedParts.getOrPut(source, { mutableMapOf() })
