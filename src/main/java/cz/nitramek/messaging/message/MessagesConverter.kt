@@ -23,7 +23,7 @@ class MessagesConverter {
             when (type) {
                 STORE.name -> return Store(header, obj["value"].asString)
                 RESULT.name -> {
-                    return Result(header, obj["status"].asString, obj["value"].asString, obj["message"].toString())
+                    return Result(header, obj["status"].asString, obj["value"]?.asString ?: "", obj["message"].toString())
                 }
                 SEND.name -> {
                     val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
@@ -50,9 +50,12 @@ class MessagesConverter {
                 else -> return UnknownMessage(header, type, obj.toString())
             }
         } catch (exception: JsonParseException) {
+            log.error(json)
             log.error(exception.message, exception.printStackTrace())
             throw exception
         } catch (e: NullPointerException) {
+            log.error(json)
+            log.error(e.message, e.printStackTrace())
             throw e
         }
 
