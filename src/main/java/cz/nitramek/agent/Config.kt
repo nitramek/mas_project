@@ -1,10 +1,10 @@
 package cz.nitramek.agent
 
-const val SENDER_THREAD_COUNT = 4
-const val RECEIVER_THREAD_COUNT = 12
+const val SENDER_THREAD_COUNT = 1
+const val RECEIVER_THREAD_COUNT = 4
 const val PART_MAX_SIZE = 1028
 const val MAX_RETRIES = 20
-const val RESEND_DELAY = 200L
+const val RESEND_DELAY = 500L
 
 const val AGENT_PACKAGE_NAME = "agent_nitramek.zip"
 const val AGENT_JAR_NAME = "agent_nitramek.jar"

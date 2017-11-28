@@ -2,6 +2,7 @@ package cz.nitramek.utils
 
 import java.net.BindException
 import java.net.DatagramSocket
+import java.net.Inet6Address
 import java.net.NetworkInterface
 
 object NetworkUtils {
@@ -16,10 +17,13 @@ object NetworkUtils {
     }
 
     //    fun localAddres() = "192.168.43.125"
-    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence().filter { !it.isVirtual }.filter { !it.isLoopback }
+    fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence()
+            .filter { !it.isVirtual }.
+            filter { !it.isLoopback }
             .filter { it.isUp }
             .filter { !isVmwareMac(it.hardwareAddress) }
-            .first().inetAddresses.asSequence().first()
+            .filter { it.inetAddresses.asSequence().filter { it !is Inet6Address }.count() > 0 }
+            .first().inetAddresses.asSequence().filter { !it.isLinkLocalAddress }.first()
 
     private fun isVmwareMac(mac: ByteArray): Boolean {
         val invalidMacs = arrayOf(byteArrayOf(0x00, 0x05, 0x69), //VMWare

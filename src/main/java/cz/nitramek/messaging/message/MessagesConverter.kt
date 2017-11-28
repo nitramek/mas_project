@@ -14,10 +14,15 @@ class MessagesConverter {
 
 
     fun strToObj(json: String): Message {
+        return jObjToObj(strToJsonObj(json))
+    }
+
+    fun strToJsonObj(json: String) = jsonParser.parse(json).asJsonObject
+
+
+    fun jObjToObj(obj: JsonObject): Message {
         try {
-//            log.debug("Received length - ${json.length}")
-//            log.debug("{}", json)
-            val obj = jsonParser.parse(json).asJsonObject
+
             val type = obj["type"].asString.toUpperCase()
             val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt), obj["tag"].asString)
             when (type) {
@@ -50,18 +55,16 @@ class MessagesConverter {
                 else -> return UnknownMessage(header, type, obj.toString())
             }
         } catch (exception: JsonParseException) {
-            log.error(json)
+            log.error(obj.toString())
             log.error(exception.message, exception.printStackTrace())
             throw exception
         } catch (e: NullPointerException) {
-            log.error(json)
+            log.error(obj.toString())
             log.error(e.message, e.printStackTrace())
             throw e
         }
 
-
     }
-
     fun addHeaderParams(jsonString: String, header: MessageHeader): String {
         val jObject = jsonParser.parse(jsonString).asJsonObject
         jObject.addProperty("sourceIp", header.source.address.hostAddress)

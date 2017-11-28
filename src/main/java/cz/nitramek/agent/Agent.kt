@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
 
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
 class Agent(val loggerAddress: InetSocketAddress? = null) {
@@ -30,7 +31,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
     val bindedAddress = communicator.respondAdress()
     var isRunning: Boolean = false
         private set
-    private val receivedParts = mutableMapOf<InetSocketAddress, MutableMap<String, PartedPackage>>()
+    private val receivedParts = ConcurrentHashMap<InetSocketAddress, ConcurrentHashMap<String, PartedPackage>>()
     private val repository = FileRepository(bindedAddress, executablePath())
 
     private val localHeader = MessageHeader(bindedAddress)
@@ -63,14 +64,16 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         }
 
         override fun handle(packageReceived: PackageReceived) {
+            log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME")
-            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+//            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
         }
 
         override fun handle(aPackage: Package) {
             val source = aPackage.header.source
-            val packages = receivedParts.getOrPut(source, { mutableMapOf() })
+            val packages = receivedParts.getOrPut(source, { ConcurrentHashMap() })
             val fileName = aPackage.fileName
+
             val partedPackage = packages.getOrPut(fileName, { PartedPackage(aPackage.partsCount, fileName) })
             partedPackage.addPart(aPackage.order, aPackage.data)
             if (partedPackage.isCompleted()) {

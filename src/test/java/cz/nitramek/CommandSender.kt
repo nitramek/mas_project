@@ -14,7 +14,7 @@ object Sender {
     @JvmStatic
     fun main(args: Array<String>) {
         val sender = UDPSender()
-        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11112))
+        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11112), tag = "Potato")
         val converter = MessagesConverter()
         sender.start()
         val testAgentAddress = InetSocketAddress(NetworkUtils.localAddres(), 11111)
@@ -24,24 +24,43 @@ object Sender {
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_PACKAGE_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
+        val otherAgentAddress = InetSocketAddress("192.168.0.11", 11111) //pavel
+        sender.sendPacket(converter.objToStr(halt), testAgentAddress)
+//        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
+//        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
+//        val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //vojta
 
-        val otherAgentAddress = InetSocketAddress("192.168.0.2", 11112)
-        val duplicateToMyself = Duplicate(mockSource, otherAgentAddress)
-        val sendDupToOther = Send(mockSource, testAgentAddress, converter.objToStr(duplicateToMyself))
-        val sendSendToMyself = Send(mockSource, otherAgentAddress, converter.objToStr(sendDupToOther))
-//        println(converter.objToStr(sendSendToMyself))
-//        sender.sendPacket(converter.objToStr(addAgents), testAgentAddress)
-//        sender.sendPacket(converter.objToStr(execute), testAgentAddress)
-//        val killall = JsonObject().apply {
-//            addProperty("type", "KILLALL")
-//            addProperty("sourceIp", "127.0.0.1")
-//            addProperty("sourcePort", 80)
-//            addProperty("tag", "potato")
-//        }
-//        sender.sendPacket(killall.toString(), testAgentAddress)
-//        sender.sendPacket(converter.objToStr(store), testAgentAddress)
-        sender.sendPacket(converter.objToJson(sendSendToMyself).toString(), testAgentAddress)
-//        sender.sendPacket(converter.objToJson(storeSomething).toString(), testAgentAddress)
+        //        println(converter.objToStr(sendSendToMyself))
+        //        sender.sendPacket(converter.objToStr(addAgents), from)
+        //        sender.sendPacket(converter.objToStr(execute), from)
+        //        val killall = JsonObject().apply {
+        //            addProperty("type", "KILLALL")
+        //            addProperty("sourceIp", "127.0.0.1")
+        //            addProperty("sourcePort", 80)
+        //            addProperty("tag", "potato")
+        //        }
+        //        sender.sendPacket(killall.toString(), from)
+        //        sender.sendPacket(converter.objToStr(store), from)
+        //        sender.sendPacket(converter.objToJson(storeSomething).toString(), from)
         sender.shutdown()
+    }
+
+    private fun sendPackageRequest(mockSource: MessageHeader, from: InetSocketAddress, to: InetSocketAddress, converter: MessagesConverter, sender: UDPSender) {
+        val duplicateToMyself = Duplicate(mockSource, to)
+        val sendDupToOther = Send(mockSource, from, converter.objToStr(duplicateToMyself))
+        val sendSendToMyself = Send(mockSource, to, converter.objToStr(sendDupToOther))
+        //        println(converter.objToStr(sendSendToMyself))
+        //        sender.sendPacket(converter.objToStr(addAgents), from)
+        //        sender.sendPacket(converter.objToStr(execute), from)
+        //        val killall = JsonObject().apply {
+        //            addProperty("type", "KILLALL")
+        //            addProperty("sourceIp", "127.0.0.1")
+        //            addProperty("sourcePort", 80)
+        //            addProperty("tag", "potato")
+        //        }
+        //        sender.sendPacket(killall.toString(), from)
+        //        sender.sendPacket(converter.objToStr(store), from)
+        sender.sendPacket(converter.objToJson(sendSendToMyself).toString(), from)
+        //        sender.sendPacket(converter.objToJson(storeSomething).toString(), from)
     }
 }

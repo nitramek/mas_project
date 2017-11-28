@@ -13,7 +13,6 @@ interface Message {
         HALT("HALT"),
         DUPLICATE("DUPLICATE"),
         PACKAGE_RECEIVED("PACKAGERECEIVED")
-
     }
 
     val header: MessageHeader

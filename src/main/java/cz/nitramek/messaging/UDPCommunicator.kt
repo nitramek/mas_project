@@ -7,6 +7,7 @@ import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
+
 import java.net.InetSocketAddress
 import java.util.concurrent.*
 
@@ -20,40 +21,37 @@ class UDPCommunicator : Communicator {
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
 
-    data class Envelope(val source: InetSocketAddress, val recipient: InetSocketAddress, val value: String)
+    data class Envelope(val recipient: InetSocketAddress, val value: String)
 
 
     private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
 
     override val addressBook = ConcurrentSkipListSet<InetSocketAddress>(Comparator.comparing(InetSocketAddress::toString))
 
+    private val acks = ConcurrentSkipListSet<Int>()
+
     private val cleanerPool = Executors.newScheduledThreadPool(1)
 
 
     init {
 
-        receiverService.addMessageListener({ message: String, _: InetSocketAddress ->
+        receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
             checkNewAgentAddress(msg)
             log.debug("Received  {} from {}", msg)
-            if (msg !is Ack) {
+            if (msg is Ack) {
+                ackReceived(msg)
+            } else {
                 val ack = Ack(MessageHeader(respondAdress()), message)
-//                log.info("Ack - {}", ack.message)
                 this.sendMessage(ack, msg.header.source, false)
             }
             handlers.forEach(msg::handle)
         })
-        handlers.add(object : MessageHandler() {
-            override fun handle(ack: Ack) {
-                checkNewAgentAddress(ack)
-                val envelope = Envelope(respondAdress(), ack.header.source, ack.message)
-                val removed = wantAckPackets.remove(envelope)
-//                log.info("Ack - {}", ack.message)
-                log.debug("ACKED  {} {}", removed, envelope)
+    }
 
-
-            }
-        })
+    private fun ackReceived(ack: Ack) {
+        val envelope = Envelope(ack.header.source, ack.message)
+        acks.add(envelope.hashCode())
     }
 
     private fun checkNewAgentAddress(msg: Message) {
@@ -69,23 +67,15 @@ class UDPCommunicator : Communicator {
         if (acked) {
             val retries = wantAckPackets.getOrPut(envelope, { 0 })
             if (retries < MAX_RETRIES) {
-                cleanerPool.schedule({
-                    if (wantAckPackets.containsKey(envelope)) {
-                        //retry sending if the message is still waiting for ack
-                        log.debug("Resending")
-                        sendPacket(envelope, acked)
-                    }
-                }, RESEND_DELAY, TimeUnit.MILLISECONDS)
                 wantAckPackets[envelope] = retries + 1
+                cleanerPool.schedule(AckingTask(envelope), RESEND_DELAY, TimeUnit.MILLISECONDS)
             } else {
                 log.error("Recipient is not responding on {}", envelope)
                 wantAckPackets.remove(envelope)
                 addressBook.remove(envelope.recipient)
                 //address cuoldnt have been reached so we just remove the agent from know the agentbook
             }
-
         }
-
     }
 
     override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean) {
@@ -95,7 +85,7 @@ class UDPCommunicator : Communicator {
 
 
     override fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean) {
-        sendPacket(Envelope(respondAdress(), address, message), acked)
+        sendPacket(Envelope(address, message), acked)
     }
 
     override fun respondAdress(): InetSocketAddress {
@@ -119,4 +109,20 @@ class UDPCommunicator : Communicator {
         receiverService.start()
     }
 
+    inner class AckingTask(private val envelope: UDPCommunicator.Envelope) : Runnable {
+
+        override fun run() {
+            if (acks.remove(envelope.hashCode())) {
+                wantAckPackets.remove(envelope)
+            } else {
+                if (wantAckPackets.containsKey(envelope)) {
+                    log.debug("Resending ${wantAckPackets[envelope]}")
+                    //retry sending if the message is still waiting for ack
+                    sendPacket(envelope, true)
+                }
+            }
+        }
+
+    }
 }
+

@@ -34,7 +34,7 @@ class FileRepository(private val localAddress: InetSocketAddress, private val ex
         ensureDirExistance(rootRepository)
         clean()
         ensureDirExistance(rootRepository)
-        val zipInMemory = ByteArrayOutputStream(2516582)
+        val zipInMemory = ByteArrayOutputStream()
         createPackageAsZip(zipInMemory)
         agentInParts = toBase64Part(zipInMemory.toByteArray())
 

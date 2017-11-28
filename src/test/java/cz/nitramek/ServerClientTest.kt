@@ -42,7 +42,7 @@ internal class ServerClientTest {
         val counters = intArrayOf(0, 0)
         val lock = ReentrantLock()
         val condition = lock.newCondition()
-        receiver.addMessageListener({ message, _ ->
+        receiver.addMessageListener({ message ->
             counters[0]++
             if (message == "Hello") {
                 counters[1]++
@@ -58,11 +58,14 @@ internal class ServerClientTest {
         sender.sendPacket("Hello", receiver.address)
         sender.sendPacket("Hello", receiver.address)
         sender.sendPacket("Hello", receiver.address)
+        sender.sendPacket("Hello", receiver.address)
 
         lock.lock()
         condition.await(1, TimeUnit.SECONDS)
         lock.unlock()
         assertTrue(counters[1] > 2, "Messages count ${counters[0]}, hellos count ${counters[1]}")
+        receiver.shutdown()
+        sender.shutdown()
 
 
     }
