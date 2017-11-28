@@ -22,7 +22,9 @@ class MessagesConverter {
             val header = MessageHeader(InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt), obj["tag"].asString)
             when (type) {
                 STORE.name -> return Store(header, obj["value"].asString)
-                RESULT.name -> return Result(header, obj["status"].asString, obj["result"].asString, obj["message"].toString())
+                RESULT.name -> {
+                    return Result(header, obj["status"].asString, obj["value"].asString, obj["message"].toString())
+                }
                 SEND.name -> {
                     val recipient = InetSocketAddress(obj["ip"].asString, obj["port"].asInt)
                     val message = obj["message"].asString
@@ -80,7 +82,7 @@ class MessagesConverter {
             is Result -> {
                 obj.addProperty("status", message.status)
                 obj.addProperty("message", message.message)
-                obj.addProperty("result", message.result)
+                obj.addProperty("value", message.value)
             }
             is Send -> {
                 obj.addProperty("ip", message.recipient.hostString)

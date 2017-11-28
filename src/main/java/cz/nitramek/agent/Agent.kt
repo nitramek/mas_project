@@ -135,7 +135,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         }
 
         override fun handle(result: Result) {
-            log.info("Received result {} - {}", result.status, result.result)
+            log.info("Received value {} - {}", result.status, result.value)
         }
 
         override fun handle(send: Send) {
