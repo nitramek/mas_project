@@ -10,7 +10,7 @@ import java.net.InetSocketAddress
 class MessagesConverter {
 
     private val jsonParser = JsonParser()
-    private val log = LoggerFactory.getLogger("message")!!
+    private val log = LoggerFactory.getLogger(MessagesConverter::class.java)!!
 
 
     fun strToObj(json: String): Message {

@@ -110,7 +110,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
 
         override fun handle(unknownMessage: UnknownMessage) {
             val type = unknownMessage.type
-            if (amIAgentLogger() && type == "KILLALL") {
+            if (isLogger() && type == "KILLALL") {
                 log.info("I will prevail thus logger am I! Killing all pesky agents")
                 val halt = Halt(localHeader)
                 communicator.addressBook.forEach {
@@ -155,7 +155,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         }
     }
 
-    private fun amIAgentLogger() = loggerAddress == null
+    fun isLogger() = loggerAddress == null
 
     init {
         communicator.addMessageHandler(messageHandler)

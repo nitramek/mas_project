@@ -13,7 +13,9 @@ import java.util.concurrent.*
 
 class UDPCommunicator : Communicator {
 
+
     private val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
+    private val messagesLog = LoggerFactory.getLogger("receivedMessages")!!
 
 
     private val senderService: UDPSender = UDPSender()
@@ -38,7 +40,8 @@ class UDPCommunicator : Communicator {
         receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
             checkNewAgentAddress(msg)
-            log.debug("Received  {} from {}", msg)
+            messagesLog.debug("Received  {} ", msg)
+
             if (msg is Ack) {
                 ackReceived(msg)
             } else {

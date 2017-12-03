@@ -14,7 +14,7 @@ object Sender {
     @JvmStatic
     fun main(args: Array<String>) {
         val sender = UDPSender()
-        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11112), tag = "Potato")
+        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111), tag = "Potato")
         val converter = MessagesConverter()
         sender.start()
         val testAgentAddress = InetSocketAddress(NetworkUtils.localAddres(), 11111)
@@ -25,7 +25,7 @@ object Sender {
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_PACKAGE_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
         val otherAgentAddress = InetSocketAddress("192.168.0.11", 11111) //pavel
-        sender.sendPacket(converter.objToStr(halt), testAgentAddress)
+        sender.sendPacket(converter.objToStr(store), testAgentAddress)
 //        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
 //        val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //vojta
