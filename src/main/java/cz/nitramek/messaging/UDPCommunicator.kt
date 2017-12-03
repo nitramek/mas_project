@@ -40,7 +40,11 @@ class UDPCommunicator : Communicator {
         receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
             checkNewAgentAddress(msg)
-            messagesLog.debug("Received  {} ", msg)
+            if (msg.type == Message.MessageType.PACKAGE.type || msg.type == Message.MessageType.ACK.type) {
+                messagesLog.trace("Received  {} ", msg)
+            } else {
+                messagesLog.debug("Received  {} ", msg)
+            }
 
             if (msg is Ack) {
                 ackReceived(msg)

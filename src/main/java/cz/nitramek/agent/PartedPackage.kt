@@ -18,7 +18,7 @@ class PartedPackage(private val partCount: Int, val name: String) {
         val savedPart = parts.getAndSet(order, data)
         if (savedPart.isNullOrBlank()) {
             val currentPartsCount = receivedParts.getAndIncrement()
-            log.info("$order\t$partCount\t$currentPartsCount - $this")
+            log.trace("$order\t$partCount\t$currentPartsCount - $this")
         }
 
     }
