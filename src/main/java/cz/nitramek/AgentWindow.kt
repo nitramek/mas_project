@@ -2,7 +2,9 @@ package cz.nitramek
 
 import cz.nitramek.agent.Agent
 import javafx.application.Application
+import javafx.application.Platform
 import javafx.scene.Scene
+import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
@@ -30,6 +32,9 @@ class AgentWindow : Application() {
         val vbox = VBox()
         if (agent?.isLogger() == true) {
             vbox.children.add(Label("IM LOGGER"))
+            val killAllBtn = Button("Kill all")
+            killAllBtn.setOnAction { _ -> agent?.killAllAgents() }
+            vbox.children.add(killAllBtn)
         }
         vbox.children.add(agentAddressLabel)
         Label("Received messages log")
@@ -37,6 +42,7 @@ class AgentWindow : Application() {
         hbox.children.add(guiLogger)
         primaryStage.scene = Scene(hbox, 600.0, 250.0)
         primaryStage.show()
+        primaryStage.setOnCloseRequest { _ -> Platform.exit() }
     }
 
     private fun setupStoreLogger() {
@@ -58,7 +64,7 @@ class AgentWindow : Application() {
     private fun startAgent() {
         val args = parameters.raw
         val loggerAddress = if (args.size == 2) InetSocketAddress(args[0], args[1].toInt()) else null
-        agent = Agent(loggerAddress).also(Agent::start)
+        agent = Agent(Platform::exit, loggerAddress).also(Agent::start)
         agentAddressLabel.text = agent?.bindedAddress.toString()
     }
 

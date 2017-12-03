@@ -13,13 +13,13 @@ import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
-class Agent(val loggerAddress: InetSocketAddress? = null) {
+class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddress? = null) {
 
     /**
      * Utilities
      */
     private val log = LoggerFactory.getLogger(this::class.java)!!
-    private val storeLog = LoggerFactory.getLogger("storeLogger")!!
+
     private val gson = Gson()
     private val converter = MessagesConverter()
 
@@ -52,7 +52,23 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         }
     }
 
-    private val messageHandler = object : MessageHandler() {
+    open class LoggerMessageHandler(val agent: Agent) : MessageHandler() {
+        private val storeLog = LoggerFactory.getLogger("storeLogger")!!
+
+        override fun handle(unknownMessage: UnknownMessage) {
+            val type = unknownMessage.type
+            if (agent.isLogger() && type == "KILLALL") {
+                agent.killAllAgents()
+            }
+        }
+
+        override fun handle(store: Store) {
+            storeLog.info(store.value)
+        }
+    }
+
+
+    private val messageHandler = object : LoggerMessageHandler(this) {
 
         override fun newAgentFound(address: InetSocketAddress) {
 
@@ -66,7 +82,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
         override fun handle(packageReceived: PackageReceived) {
             log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME")
-//            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
         }
 
         override fun handle(aPackage: Package) {
@@ -108,17 +124,6 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             this@Agent.stop()
         }
 
-        override fun handle(unknownMessage: UnknownMessage) {
-            val type = unknownMessage.type
-            if (isLogger() && type == "KILLALL") {
-                log.info("I will prevail thus logger am I! Killing all pesky agents")
-                val halt = Halt(localHeader)
-                communicator.addressBook.forEach {
-                    communicator.sendMessage(halt, it, true)
-                }
-            }
-        }
-
         override fun handle(agents: Agents) {
             log.debug("Sending Agents")
             val arrayOfAgents = communicator.addressBook.map {
@@ -148,17 +153,24 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             val messageToSend = converter.addHeaderParams(messageSendNoLocalParams, localHeader)
             communicator.sendMessage(messageToSend, send.recipient, true)
         }
+    }
 
-        override fun handle(store: Store) {
-            log.debug("Storing {}", store.value)
-            storeLog.info(store.value)
+    fun killAllAgents() {
+        log.info("I will prevail thus logger am I! Killing all pesky agents")
+        val halt = Halt(localHeader)
+        communicator.addressBook.forEach {
+            communicator.sendMessage(halt, it, true)
         }
     }
 
     fun isLogger() = loggerAddress == null
 
     init {
-        communicator.addMessageHandler(messageHandler)
+        if (!isLogger()) {
+            communicator.addMessageHandler(messageHandler)
+        } else {
+            communicator.addMessageHandler(LoggerMessageHandler(this))
+        }
     }
 
     fun sendMyself(recipient: InetSocketAddress) {
@@ -194,6 +206,7 @@ class Agent(val loggerAddress: InetSocketAddress? = null) {
             communicator.stop()
             log.debug("Agent stopped")
             this.isRunning = false
+            onStopListener()
         }
     }
 

@@ -12,7 +12,7 @@ class AgentTester {
 
     companion object {
 
-        private val agent = Agent()
+        private val agent = Agent({})
         private val sender = UDPSender()
 
         @BeforeClass
