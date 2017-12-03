@@ -12,6 +12,7 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import org.apache.log4j.AppenderSkeleton
+import org.apache.log4j.Level
 import org.apache.log4j.LogManager
 import org.apache.log4j.spi.LoggingEvent
 import java.net.InetSocketAddress
@@ -52,8 +53,13 @@ class AgentWindow : Application() {
             override fun requiresLayout() = false
 
             override fun append(event: LoggingEvent) {
-                guiLogger.appendText(event.renderedMessage)
-                guiLogger.appendText("\n")
+                if (event.getLevel().isGreaterOrEqual(Level.DEBUG)) {
+                    Platform.runLater {
+                        guiLogger.appendText(event.renderedMessage)
+                        guiLogger.appendText("\n")
+                    }
+                }
+
             }
 
             override fun close() {}

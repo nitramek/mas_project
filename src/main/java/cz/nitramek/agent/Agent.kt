@@ -31,7 +31,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     val bindedAddress = communicator.respondAdress()
     var isRunning: Boolean = false
         private set
-    private val receivedParts = ConcurrentHashMap<InetSocketAddress, ConcurrentHashMap<String, PartedPackage>>()
+    private val receivedParts = ConcurrentHashMap<InetSocketAddress, PartedPackage>()
     private val repository = FileRepository(bindedAddress, executablePath())
 
     private val localHeader = MessageHeader(bindedAddress)
@@ -71,7 +71,9 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     private val messageHandler = object : LoggerMessageHandler(this) {
 
         override fun newAgentFound(address: InetSocketAddress) {
-
+            val duplicateRequest = Duplicate(localHeader, address)
+            val sendMeDuplicate = Send(localHeader, bindedAddress, converter.objToStr(duplicateRequest))
+            communicator.sendMessage(sendMeDuplicate, address, true)
         }
 
 
@@ -87,28 +89,30 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
         override fun handle(aPackage: Package) {
             val source = aPackage.header.source
-            val packages = receivedParts.getOrPut(source, { ConcurrentHashMap() })
             val fileName = aPackage.fileName
-
-            val partedPackage = packages.getOrPut(fileName, { PartedPackage(aPackage.partsCount, fileName) })
-            partedPackage.addPart(aPackage.order, aPackage.data)
-            if (partedPackage.isCompleted()) {
-                receivedParts.remove(source)
-                repository.savePackage(addressAsRepoName(source), partedPackage)
-                val myHeader = MessageHeader(communicator.respondAdress())
-                val resultMsg = PackageReceived(myHeader)
-                communicator.sendMessage(resultMsg, source, true)
+            val partedPackage = receivedParts.getOrPut(source, { PartedPackage(aPackage.partsCount, fileName) })
+            if (!partedPackage.isCompleted().get()) {
+                val packageCompleted = partedPackage.addPart(aPackage.order, aPackage.data)
+                if (packageCompleted) {
+                    log.info("Unpacking package \n")
+                    partedPackage.notUnpacked.set(false)
+                    repository.savePackage(addressAsRepoName(source), partedPackage)
+                    val myHeader = MessageHeader(communicator.respondAdress())
+                    val resultMsg = PackageReceived(myHeader)
+                    communicator.sendMessage(resultMsg, source, true)
+                }
 //                val haltMsg = Halt(myHeader)
 //                communicator.sendMessage(haltMsg, source, false)
-
             }
+
+
         }
 
         override fun handle(execute: Execute) {
             val repoName = addressAsRepoName(execute.header.source)
             val repoPath = repository.repositoryPath(repoName)
             log.info("Executing {} from {} in {}", execute.command, execute.header.source, repoPath)
-            Runtime.getRuntime().exec(execute.command, arrayOf(), repoPath.toAbsolutePath().toFile())
+//            Runtime.getRuntime().exec(execute.command, arrayOf(), repoPath.toAbsolutePath().toFile())
         }
 
         override fun handle(halt: Halt) {
@@ -128,8 +132,8 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             log.debug("Sending Agents")
             val arrayOfAgents = communicator.addressBook.map {
                 JsonObject().apply {
-                    addProperty("ip", it.address.hostAddress)
-                    addProperty("port", it.port)
+                    addProperty("ip", it.key.address.hostAddress)
+                    addProperty("port", it.key.port)
                 }
             }.fold(JsonArray(), JsonArray::insert)
 
@@ -159,7 +163,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         log.info("I will prevail thus logger am I! Killing all pesky agents")
         val halt = Halt(localHeader)
         communicator.addressBook.forEach {
-            communicator.sendMessage(halt, it, true)
+            communicator.sendMessage(halt, it.key, true)
         }
     }
 

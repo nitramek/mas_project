@@ -1,5 +1,6 @@
 package cz.nitramek.messaging.network
 
+import cz.nitramek.agent.PART_MAX_SIZE
 import cz.nitramek.agent.RECEIVER_THREAD_COUNT
 import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
@@ -47,7 +48,7 @@ class UDPReceiver(port: Int) {
         channel = DatagramChannel.open().bind(address)
         bossThread.submit {
             while (!Thread.currentThread().isInterrupted) {
-                val buffer = ByteBuffer.allocate(2048 * 2)
+                val buffer = ByteBuffer.allocate(PART_MAX_SIZE * 2 + 512)
                 channel?.receive(buffer)
                 workerPool.submit { dispatch(buffer) }
             }

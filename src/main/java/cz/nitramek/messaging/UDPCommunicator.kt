@@ -7,9 +7,11 @@ import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
 import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
-
 import java.net.InetSocketAddress
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class UDPCommunicator : Communicator {
 
@@ -26,11 +28,11 @@ class UDPCommunicator : Communicator {
     data class Envelope(val recipient: InetSocketAddress, val value: String)
 
 
-    private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap()
+    private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap(500)
 
-    override val addressBook = ConcurrentSkipListSet<InetSocketAddress>(Comparator.comparing(InetSocketAddress::toString))
+    override val addressBook = ConcurrentHashMap<InetSocketAddress, Int>(20)
 
-    private val acks = ConcurrentSkipListSet<Int>()
+    private val acks = ConcurrentHashMap<Int, Int>(500)
 
     private val cleanerPool = Executors.newScheduledThreadPool(1)
 
@@ -58,31 +60,36 @@ class UDPCommunicator : Communicator {
 
     private fun ackReceived(ack: Ack) {
         val envelope = Envelope(ack.header.source, ack.message)
-        acks.add(envelope.hashCode())
+        acks.put(envelope.hashCode(), 0)
     }
 
     private fun checkNewAgentAddress(msg: Message) {
-        val isNewAddress = addressBook.add(msg.header.source)
-        if (isNewAddress) {
+        val isNewAddress = addressBook.put(msg.header.source, 0)
+        if (isNewAddress == null) {
+            log.info("I found new agent on {}", msg.header.source)
             handlers.forEach { it.newAgentFound(msg.header.source) }
         }
     }
 
     private fun sendPacket(envelope: Envelope, acked: Boolean) {
-        log.debug("Sending {}", envelope)
-        senderService.sendPacket(envelope.value, envelope.recipient)
+//        log.debug("Sending {}", envelope)
         if (acked) {
+            if (acks.remove(envelope.hashCode()) != null) {
+                wantAckPackets.remove(envelope)
+                return
+            }
             val retries = wantAckPackets.getOrPut(envelope, { 0 })
             if (retries < MAX_RETRIES) {
                 wantAckPackets[envelope] = retries + 1
                 cleanerPool.schedule(AckingTask(envelope), RESEND_DELAY, TimeUnit.MILLISECONDS)
             } else {
-                log.error("Recipient is not responding on {}", envelope)
+//                log.error("Recipient is not responding on {}", envelope)
                 wantAckPackets.remove(envelope)
                 addressBook.remove(envelope.recipient)
                 //address cuoldnt have been reached so we just remove the agent from know the agentbook
             }
         }
+        senderService.sendPacket(envelope.value, envelope.recipient)
     }
 
     override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean) {
@@ -119,15 +126,10 @@ class UDPCommunicator : Communicator {
     inner class AckingTask(private val envelope: UDPCommunicator.Envelope) : Runnable {
 
         override fun run() {
-            if (acks.remove(envelope.hashCode())) {
-                wantAckPackets.remove(envelope)
-            } else {
-                if (wantAckPackets.containsKey(envelope)) {
-                    log.debug("Resending ${wantAckPackets[envelope]}")
-                    //retry sending if the message is still waiting for ack
-                    sendPacket(envelope, true)
-                }
-            }
+//            log.info("Resending ${wantAckPackets[envelope]}")
+            //retry sending if the message is still waiting for ack
+            sendPacket(envelope, true)
+
         }
 
     }

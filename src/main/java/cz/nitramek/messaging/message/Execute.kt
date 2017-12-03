@@ -1,6 +1,6 @@
 package cz.nitramek.messaging.message
 
-class Execute(
+data class Execute(
         override val header: MessageHeader,
         val command: String
 ) : Message {

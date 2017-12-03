@@ -25,5 +25,5 @@ interface Communicator {
 
     fun respondAdress(): InetSocketAddress
 
-    val addressBook: Set<InetSocketAddress>
+    val addressBook: Map<InetSocketAddress, Int>
 }

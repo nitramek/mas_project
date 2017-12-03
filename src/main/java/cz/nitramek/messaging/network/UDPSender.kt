@@ -7,14 +7,16 @@ import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
 
 class UDPSender {
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
+    private val messagesLog = LoggerFactory.getLogger("receivedMessages")!!
 
     private var channel: DatagramChannel? = null
-    private val pool = Executors.newFixedThreadPool(SENDER_THREAD_COUNT)
+    private val pool = Executors.newScheduledThreadPool(SENDER_THREAD_COUNT)
 
     fun start() {
         channel = DatagramChannel.open()
@@ -30,9 +32,11 @@ class UDPSender {
 
 
     fun sendPacket(str: String, address: InetSocketAddress) {
-        pool.submit {
+
+        pool.schedule({
             sendMessage(str, address)
-        }
+            messagesLog.trace("Senidng {} to", str, address)
+        }, ThreadLocalRandom.current().nextLong(10), TimeUnit.MILLISECONDS)
     }
 
     fun shutdown() {
