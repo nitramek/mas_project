@@ -10,7 +10,17 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         Application.launch(AgentWindow::class.java, *args)
+//        val cmd = "cmd /c start Agent.exe"
+//        val f = File("D:\\drive\\vsb\\Ing\\3.semestr\\MAS\\project\\Agents\\receivedParts\\192.168.43.130_22222\\ ")
+//        Runtime.getRuntime().exec(cmd, arrayOf(), f)
+//        print("potato")
+
     }
 
+    @Throws(java.io.IOException::class)
+    fun execCmd(cmd: String): String {
+        val s = java.util.Scanner(Runtime.getRuntime().exec(cmd).inputStream).useDelimiter("\\A")
+        return if (s.hasNext()) s.next() else ""
+    }
 
 }

@@ -27,7 +27,7 @@ class PartedPackage(private val partCount: Int, val name: String) {
                 val currentPartsCount = receivedParts.incrementAndGet()
                 val nowCompleted = currentPartsCount == partCount
                 completed.compareAndSet(false, nowCompleted)
-//                log.info("$order\t$partCount\t$currentPartsCount - $this")
+                log.info("$order\t$partCount\t$currentPartsCount - $this")
                 return nowCompleted
             }
             return false
@@ -37,12 +37,17 @@ class PartedPackage(private val partCount: Int, val name: String) {
     }
 
     fun partsAsBytes(): ByteArray {
-        if (!isCompleted().get()) {
-            throw PartsNotCompletedException("Got $receivedParts/$partCount")
+        try {
+            if (!isCompleted().get()) {
+                throw PartsNotCompletedException("Got $receivedParts/$partCount")
+            }
+            val dataString = completeParts()
+            val decoder = Base64.getDecoder()
+            return decoder.decode(dataString)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
         }
-        val dataString = completeParts()
-        val decoder = Base64.getDecoder()
-        return decoder.decode(dataString)
     }
 
     fun completeParts(): String {

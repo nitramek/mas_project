@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
+
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
 class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddress? = null) {
 
@@ -73,7 +74,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         override fun newAgentFound(address: InetSocketAddress) {
             val duplicateRequest = Duplicate(localHeader, address)
             val sendMeDuplicate = Send(localHeader, bindedAddress, converter.objToStr(duplicateRequest))
-            communicator.sendMessage(sendMeDuplicate, address, true)
+//            communicator.sendMessage(sendMeDuplicate, address, true)
         }
 
 
@@ -84,7 +85,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         override fun handle(packageReceived: PackageReceived) {
             log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.canonicalHostName} ${loggerAddress?.port}")
-            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+//            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
         }
 
         override fun handle(aPackage: Package) {
@@ -112,7 +113,11 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             val repoName = addressAsRepoName(execute.header.source)
             val repoPath = repository.repositoryPath(repoName)
             log.info("Executing {} from {} in {}", execute.command, execute.header.source, repoPath)
-//            Runtime.getRuntime().exec(execute.command, arrayOf(), repoPath.toAbsolutePath().toFile())
+            var cmd = execute.command
+            if (cmd.contains("exe")) {
+                cmd = "cmd /c start $cmd"
+            }
+            Runtime.getRuntime().exec(cmd, arrayOf(), repoPath.toAbsolutePath().toFile())
         }
 
         override fun handle(halt: Halt) {
@@ -141,13 +146,27 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             val resultMsg = Result(
                     MessageHeader(communicator.respondAdress()),
                     "sucess", gson.toJson(arrayOfAgents),
-                    converter.objToStr(agents))
+                    agents.original)
             communicator.sendMessage(resultMsg, agents.header.source, true)
 
         }
 
         override fun handle(result: Result) {
             log.info("Received value {} - {}", result.status, result.value)
+            if (result.message.isNotBlank()) {
+                val obj = converter.strToObj(result.message)
+                if (obj is Agents) {
+                    val agentsArray = converter.strToJsonO(result.value).asJsonArray
+                    agentsArray.map { it.asJsonObject }.map {
+                        val ip = it["ip"].asString
+                        val port = it["port"].asInt
+                        InetSocketAddress(ip, port)
+                    }.forEach {
+                        communicator.addNewAgentAddress(it)
+                    }
+
+                }
+            }
         }
 
         override fun handle(send: Send) {

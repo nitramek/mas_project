@@ -41,7 +41,7 @@ class UDPCommunicator : Communicator {
 
         receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
-            checkNewAgentAddress(msg)
+            addNewAgentAddress(msg.header.source)
             if (msg.type == Message.MessageType.PACKAGE.type || msg.type == Message.MessageType.ACK.type) {
                 messagesLog.trace("Received  {} ", msg)
             } else {
@@ -63,33 +63,37 @@ class UDPCommunicator : Communicator {
         acks.put(envelope.hashCode(), 0)
     }
 
-    private fun checkNewAgentAddress(msg: Message) {
-        val isNewAddress = addressBook.put(msg.header.source, 0)
-        if (isNewAddress == null) {
-            log.info("I found new agent on {}", msg.header.source)
-            handlers.forEach { it.newAgentFound(msg.header.source) }
+    override fun addNewAgentAddress(agentAdress: InetSocketAddress) {
+        if (agentAdress != respondAdress()) {
+            val isNewAddress = addressBook.put(agentAdress, 0)
+            if (isNewAddress == null) {
+                log.info("I found new agent on {}", agentAdress)
+                handlers.forEach { it.newAgentFound(agentAdress) }
+            }
         }
     }
 
     private fun sendPacket(envelope: Envelope, acked: Boolean) {
+        if (envelope.recipient != respondAdress()) {
 //        log.debug("Sending {}", envelope)
-        if (acked) {
-            if (acks.remove(envelope.hashCode()) != null) {
-                wantAckPackets.remove(envelope)
-                return
-            }
-            val retries = wantAckPackets.getOrPut(envelope, { 0 })
-            if (retries < MAX_RETRIES) {
-                wantAckPackets[envelope] = retries + 1
-                cleanerPool.schedule(AckingTask(envelope), RESEND_DELAY, TimeUnit.MILLISECONDS)
-            } else {
+            if (acked) {
+                if (acks.remove(envelope.hashCode()) != null) {
+                    wantAckPackets.remove(envelope)
+                    return
+                }
+                val retries = wantAckPackets.getOrPut(envelope, { 0 })
+                if (retries < MAX_RETRIES) {
+                    wantAckPackets[envelope] = retries + 1
+                    cleanerPool.schedule(AckingTask(envelope), RESEND_DELAY, TimeUnit.MILLISECONDS)
+                } else {
 //                log.error("Recipient is not responding on {}", envelope)
-                wantAckPackets.remove(envelope)
-                addressBook.remove(envelope.recipient)
-                //address cuoldnt have been reached so we just remove the agent from know the agentbook
+                    wantAckPackets.remove(envelope)
+                    addressBook.remove(envelope.recipient)
+                    //address cuoldnt have been reached so we just remove the agent from know the agentbook
+                }
             }
+            senderService.sendPacket(envelope.value, envelope.recipient)
         }
-        senderService.sendPacket(envelope.value, envelope.recipient)
     }
 
     override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean) {

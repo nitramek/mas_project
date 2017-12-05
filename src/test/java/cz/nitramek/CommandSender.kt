@@ -24,9 +24,9 @@ object Sender {
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_PACKAGE_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
-        val otherAgentAddress = InetSocketAddress("192.168.0.11", 11111) //pavel
+        val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //pavel
 //        sender.sendPacket(converter.objToStr(store), )
-        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
+        sendPackageRequest(mockSource, otherAgentAddress, testAgentAddress, converter, sender)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
 //        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
@@ -48,7 +48,7 @@ object Sender {
     }
 
     private fun sendPackageRequest(mockSource: MessageHeader, from: InetSocketAddress, to: InetSocketAddress, converter: MessagesConverter, sender: UDPSender) {
-        val duplicateToMyself = Store(mockSource, "Hi")
+        val duplicateToMyself = Duplicate(mockSource, to)
         val sendDupToOther = Send(mockSource, from, converter.objToStr(duplicateToMyself))
         val sendSendToMyself = Send(mockSource, to, converter.objToStr(sendDupToOther))
         //        println(converter.objToStr(sendSendToMyself))

@@ -14,13 +14,13 @@ class MessagesConverter {
 
 
     fun strToObj(json: String): Message {
-        return jObjToObj(strToJsonObj(json))
+        return jObjToObj(strToJsonObj(json), json)
     }
 
     fun strToJsonObj(json: String) = jsonParser.parse(json).asJsonObject
 
-
-    fun jObjToObj(obj: JsonObject): Message {
+    fun strToJsonO(json: String) = jsonParser.parse(json)
+    fun jObjToObj(obj: JsonObject, json: String): Message {
         try {
 
             val type = obj["type"].asString.toUpperCase()
@@ -36,7 +36,7 @@ class MessagesConverter {
                     return Send(header, recipient, message)
                 }
                 ACK.name -> return Ack(header, obj["message"].asString)
-                AGENTS.name -> return Agents(header)
+                AGENTS.name -> return Agents(header, json)
                 PACKAGE.name -> {
                     return Package(header, obj["data"].asString, obj["order"].asInt, obj["fileName"].asString, obj["partsCount"].asInt)
                 }

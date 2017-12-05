@@ -24,6 +24,7 @@ interface Communicator {
     fun start()
 
     fun respondAdress(): InetSocketAddress
+    fun addNewAgentAddress(agentAdress: InetSocketAddress)
 
     val addressBook: Map<InetSocketAddress, Int>
 }

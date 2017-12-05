@@ -1,7 +1,7 @@
 package cz.nitramek.agent
 
 const val SENDER_THREAD_COUNT = 2
-const val RECEIVER_THREAD_COUNT = 3
+const val RECEIVER_THREAD_COUNT = 4
 const val PART_MAX_SIZE = 2048
 const val MAX_RETRIES = 20
 const val RESEND_DELAY = 700L
