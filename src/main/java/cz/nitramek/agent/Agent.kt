@@ -85,7 +85,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         override fun handle(packageReceived: PackageReceived) {
             log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.canonicalHostName} ${loggerAddress?.port}")
-//            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
         }
 
         override fun handle(aPackage: Package) {
@@ -121,16 +121,18 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         }
 
         override fun handle(halt: Halt) {
-            log.info("Halting :/ - address of the bastard {}", halt.header.source)
-            if (loggerAddress != null) {
-                val halterIp = halt.header.source.address.hostAddress
-                val halterPort = halt.header.source.port
-                communicator.sendMessage(
-                        Store(localHeader,
-                                "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
-                        loggerAddress, true)
+            if (localHeader.tag != halt.header.tag) {
+                log.info("Halting :/ - address of the bastard {}", halt.header.source)
+                if (loggerAddress != null) {
+                    val halterIp = halt.header.source.address.hostAddress
+                    val halterPort = halt.header.source.port
+                    communicator.sendMessage(
+                            Store(localHeader,
+                                    "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
+                            loggerAddress, true)
+                }
+                this@Agent.stop()
             }
-            this@Agent.stop()
         }
 
         override fun handle(agents: Agents) {
@@ -180,7 +182,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
     fun killAllAgents() {
         log.info("I will prevail thus logger am I! Killing all pesky agents")
-        val halt = Halt(localHeader)
+        val halt = Halt(MessageHeader(localHeader.source, "Logger"))
         communicator.addressBook.forEach {
             communicator.sendMessage(halt, it.key, true)
         }

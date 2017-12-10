@@ -47,7 +47,7 @@ class MessagesConverter {
                     return Halt(header)
                 }
                 DUPLICATE.name -> {
-                    return Duplicate(header, InetSocketAddress(obj["ip"].asString, obj["port"].asInt))
+                    return Duplicate(header, InetSocketAddress(obj["sourceIp"].asString, obj["sourcePort"].asInt))
                 }
                 PACKAGE_RECEIVED.type -> {
                     return PackageReceived(header)
@@ -114,8 +114,8 @@ class MessagesConverter {
                 return jsonParser.parse(message.message).asJsonObject
             }
             is Duplicate -> {
-                obj.addProperty("ip", message.recipient.hostString)
-                obj.addProperty("port", message.recipient.port)
+//                obj.addProperty("sourceIp", message.recipient.hostString)
+//                obj.addProperty("port", message.recipient.port)
             }
             is PackageReceived -> {
                 //nothing extra

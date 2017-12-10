@@ -47,10 +47,10 @@ class FileRepository(private val localAddress: InetSocketAddress, private val ex
         val bytes = partedPackage.partsAsBytes()
 
         val toFile = repo.resolve(partedPackage.name).toFile()
-        println("Saving $toFile")
-        FileOutputStream(toFile).use {
-            it.write(bytes)
-        }
+//        println("Saving $toFile")
+//        FileOutputStream(toFile).use {
+//            it.write(bytes)
+//        }
         ZipInputStream(ByteArrayInputStream(bytes)).use { zis ->
             generateSequence(zis::getNextEntry)
                     .takeWhile(Objects::nonNull)
