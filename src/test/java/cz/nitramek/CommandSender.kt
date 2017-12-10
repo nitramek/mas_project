@@ -26,7 +26,7 @@ object Sender {
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
         val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //pavel
 //        sender.sendPacket(converter.objToStr(store), )
-        sendPackageRequest(mockSource, otherAgentAddress, testAgentAddress, converter, sender)
+        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
 //        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
