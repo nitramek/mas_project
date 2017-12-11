@@ -24,7 +24,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     private val gson = Gson()
     private val converter = MessagesConverter()
 
-    private val communicator: Communicator = UDPCommunicator()
+    val communicator: Communicator = UDPCommunicator()
 
     /**
      * State
@@ -35,7 +35,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     private val receivedParts = ConcurrentHashMap<InetSocketAddress, PartedPackage>()
     private val repository = FileRepository(bindedAddress, executablePath())
 
-    private val localHeader = MessageHeader(bindedAddress)
+    val localHeader = MessageHeader(bindedAddress)
 
     init {
         println(bindedAddress)
@@ -50,21 +50,6 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             val parts = configFileLine.split(":")
             val pappaAddress = InetSocketAddress(parts[0], parts[1].toInt())
             communicator.sendMessage(Agents(localHeader), pappaAddress, true)
-        }
-    }
-
-    open class LoggerMessageHandler(val agent: Agent) : MessageHandler() {
-        private val storeLog = LoggerFactory.getLogger("storeLogger")!!
-
-        override fun handle(unknownMessage: UnknownMessage) {
-            val type = unknownMessage.type
-            if (agent.isLogger() && type == "KILLALL") {
-                agent.killAllAgents()
-            }
-        }
-
-        override fun handle(store: Store) {
-            storeLog.info(store.value)
         }
     }
 
