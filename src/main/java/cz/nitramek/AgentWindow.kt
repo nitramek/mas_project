@@ -37,6 +37,7 @@ open class AgentWindow : Application() {
 
     protected open fun setupLayout(): HBox {
         val hbox = HBox()
+        controlPanel.minWidth(200.0)
         controlPanel.children.add(agentAddressLabel)
         hbox.children.add(controlPanel)
         hbox.children.add(guiLogger)
@@ -69,7 +70,7 @@ open class AgentWindow : Application() {
         })
     }
 
-    private fun startAgent() {
+    open fun startAgent() {
         val args = parameters.raw
         val loggerAddress = if (args.size >= 2) InetSocketAddress(args[0], args[1].toInt()) else null
         agent = Agent(Platform::exit, loggerAddress).also(Agent::start)

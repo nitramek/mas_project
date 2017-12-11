@@ -54,7 +54,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     }
 
 
-    private val messageHandler = object : LoggerMessageHandler(this) {
+    var messageHandler: MessageHandler = object : LoggerMessageHandler(this) {
 
         override fun newAgentFound(address: InetSocketAddress) {
             val duplicateRequest = Duplicate(localHeader, address)
@@ -177,10 +177,11 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
     init {
         if (!isLogger()) {
-            communicator.addMessageHandler(messageHandler)
+
         } else {
-            communicator.addMessageHandler(LoggerMessageHandler(this))
+            messageHandler = LoggerMessageHandler(this)
         }
+        communicator.addMessageHandler(messageHandler)
     }
 
     fun sendMyself(recipient: InetSocketAddress) {
