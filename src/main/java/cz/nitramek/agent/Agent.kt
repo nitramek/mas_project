@@ -59,7 +59,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         override fun newAgentFound(address: InetSocketAddress) {
             val duplicateRequest = Duplicate(localHeader, address)
             val sendMeDuplicate = Send(localHeader, bindedAddress, converter.objToStr(duplicateRequest))
-//            communicator.sendMessage(sendMeDuplicate, address, true)
+            communicator.sendMessage(sendMeDuplicate, address, true)
         }
 
 
@@ -70,7 +70,10 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         override fun handle(packageReceived: PackageReceived) {
             log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.canonicalHostName} ${loggerAddress?.port}")
-            communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+            for (i in 0..10) {
+                communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+            }
+            communicator.sendMessage(Halt(localHeader), packageReceived.header.source, true)
         }
 
         override fun handle(aPackage: Package) {
