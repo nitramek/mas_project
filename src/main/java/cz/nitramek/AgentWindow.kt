@@ -4,8 +4,6 @@ import cz.nitramek.agent.Agent
 import javafx.application.Application
 import javafx.application.Platform
 import javafx.scene.Scene
-import javafx.scene.control.Button
-import javafx.scene.control.Label
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
 import javafx.scene.layout.HBox
@@ -18,32 +16,36 @@ import org.apache.log4j.spi.LoggingEvent
 import java.net.InetSocketAddress
 
 
-class AgentWindow : Application() {
+open class AgentWindow : Application() {
 
     var agent: Agent? = null
-    val guiLogger = TextArea()
-    val agentAddressLabel = TextField()
+    private val guiLogger = TextArea()
+    private val agentAddressLabel = TextField()
 
+    protected open val windowName = "Agent Nitramek"
+
+    protected val controlPanel: VBox = VBox()
 
     override fun start(primaryStage: Stage) {
-        primaryStage.title = "Agent Nitramek"
-        setupStoreLogger()
-        startAgent()
-        val hbox = HBox()
-        val vbox = VBox()
-        if (agent?.isLogger() == true) {
-            vbox.children.add(Label("IM LOGGER"))
-            val killAllBtn = Button("Kill all")
-            killAllBtn.setOnAction { _ -> agent?.killAllAgents() }
-            vbox.children.add(killAllBtn)
-        }
-        vbox.children.add(agentAddressLabel)
-        Label("Received messages log")
-        hbox.children.add(vbox)
-        hbox.children.add(guiLogger)
+        primaryStage.title = windowName
+        val hbox = setupLayout()
         primaryStage.scene = Scene(hbox, 600.0, 250.0)
         primaryStage.show()
         primaryStage.setOnCloseRequest { _ -> Platform.exit() }
+        startLogic()
+    }
+
+    protected open fun setupLayout(): HBox {
+        val hbox = HBox()
+        controlPanel.children.add(agentAddressLabel)
+        hbox.children.add(controlPanel)
+        hbox.children.add(guiLogger)
+        return hbox
+    }
+
+    private fun startLogic() {
+        setupStoreLogger()
+        startAgent()
     }
 
     private fun setupStoreLogger() {
@@ -69,7 +71,7 @@ class AgentWindow : Application() {
 
     private fun startAgent() {
         val args = parameters.raw
-        val loggerAddress = if (args.size == 2) InetSocketAddress(args[0], args[1].toInt()) else null
+        val loggerAddress = if (args.size >= 2) InetSocketAddress(args[0], args[1].toInt()) else null
         agent = Agent(Platform::exit, loggerAddress).also(Agent::start)
         agentAddressLabel.text = agent?.bindedAddress.toString()
     }
