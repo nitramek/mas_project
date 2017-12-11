@@ -11,6 +11,8 @@ object Main {
     fun main(args: Array<String>) {
         val windowClass = if (args.size >= 2) AgentWindow::class.java else AgentLoggerGui::class.java
         Application.launch(windowClass, *args)
+
+
     }
 
 }

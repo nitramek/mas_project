@@ -1,0 +1,8 @@
+node {
+    text-size: 20;
+
+}
+node.dead{
+    fill-mode: plain;
+    fill-color: #FF0000;
+}
