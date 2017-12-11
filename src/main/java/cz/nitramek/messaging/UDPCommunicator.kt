@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+
 class UDPCommunicator : Communicator {
 
 
@@ -41,7 +42,7 @@ class UDPCommunicator : Communicator {
 
         receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
-            addNewAgentAddress(msg.header.source)
+            addNewAgentAddress(msg.header)
             if (msg.type == Message.MessageType.PACKAGE.type || msg.type == Message.MessageType.ACK.type) {
                 messagesLog.trace("Received  {} ", msg)
             } else {
@@ -63,12 +64,12 @@ class UDPCommunicator : Communicator {
         acks.put(envelope.hashCode(), 0)
     }
 
-    override fun addNewAgentAddress(agentAdress: InetSocketAddress) {
-        if (agentAdress != respondAdress()) {
-            val isNewAddress = addressBook.put(agentAdress, 0)
+    override fun addNewAgentAddress(header: MessageHeader) {
+        if (header.source != respondAdress()) {
+            val isNewAddress = addressBook.put(header.source, 0)
             if (isNewAddress == null) {
-                log.info("I found new agent on {}", agentAdress)
-                handlers.forEach { it.newAgentFound(agentAdress) }
+                log.info("I found new agent on {}", header.source)
+                handlers.forEach { it.newAgentFound(header) }
             }
         }
     }
@@ -89,6 +90,7 @@ class UDPCommunicator : Communicator {
 //                log.error("Recipient is not responding on {}", envelope)
                     wantAckPackets.remove(envelope)
                     addressBook.remove(envelope.recipient)
+                    handlers.forEach { it.removedAgent(envelope.recipient) }
                     //address cuoldnt have been reached so we just remove the agent from know the agentbook
                 }
             }

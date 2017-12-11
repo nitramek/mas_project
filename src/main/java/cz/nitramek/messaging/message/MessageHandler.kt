@@ -20,7 +20,8 @@ abstract class MessageHandler {
     open fun handle(halt: Halt) {}
     open fun handle(duplicate: Duplicate) {}
 
-    open fun newAgentFound(address: InetSocketAddress) {}
+    open fun newAgentFound(messageHeader: MessageHeader) {}
+    open fun removedAgent(address: InetSocketAddress) {}
     open fun handle(packageReceived: PackageReceived) {}
 
 

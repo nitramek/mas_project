@@ -2,6 +2,7 @@ package cz.nitramek.messaging
 
 import cz.nitramek.messaging.message.Message
 import cz.nitramek.messaging.message.MessageHandler
+import cz.nitramek.messaging.message.MessageHeader
 
 import java.net.InetSocketAddress
 
@@ -24,7 +25,7 @@ interface Communicator {
     fun start()
 
     fun respondAdress(): InetSocketAddress
-    fun addNewAgentAddress(agentAdress: InetSocketAddress)
 
     val addressBook: Map<InetSocketAddress, Int>
+    fun addNewAgentAddress(header: MessageHeader)
 }

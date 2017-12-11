@@ -53,15 +53,22 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         }
     }
 
-
+    /**
+     * it works like a set
+     */
+    private val addressBook = ConcurrentHashMap<InetSocketAddress, MessageHeader>(20)
     var messageHandler: MessageHandler = object : LoggerMessageHandler(this) {
 
-        override fun newAgentFound(address: InetSocketAddress) {
-            val duplicateRequest = Duplicate(localHeader, address)
+        override fun newAgentFound(messageHeader: MessageHeader) {
+            addressBook.put(messageHeader.source, messageHeader)
+            val duplicateRequest = Duplicate(localHeader, messageHeader.source)
             val sendMeDuplicate = Send(localHeader, bindedAddress, converter.objToStr(duplicateRequest))
-            communicator.sendMessage(sendMeDuplicate, address, true)
+            communicator.sendMessage(sendMeDuplicate, messageHeader.source, true)
         }
 
+        override fun removedAgent(address: InetSocketAddress) {
+            addressBook.remove(address)
+        }
 
         override fun handle(duplicate: Duplicate) {
             sendMyself(duplicate.recipient)
@@ -125,10 +132,11 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
         override fun handle(agents: Agents) {
             log.debug("Sending Agents")
-            val arrayOfAgents = communicator.addressBook.map {
+            val arrayOfAgents = addressBook.map {
                 JsonObject().apply {
-                    addProperty("ip", it.key.address.hostAddress)
-                    addProperty("port", it.key.port)
+                    addProperty("ip", it.value.source.address.hostAddress)
+                    addProperty("port", it.value.source.port)
+                    addProperty("tag", it.value.tag)
                 }
             }.fold(JsonArray(), JsonArray::insert)
 
@@ -150,7 +158,8 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                     agentsArray.map { it.asJsonObject }.map {
                         val ip = it["ip"].asString
                         val port = it["port"].asInt
-                        InetSocketAddress(ip, port)
+                        val tag = it["tag"].asString
+                        MessageHeader(InetSocketAddress(ip, port), tag)
                     }.forEach {
                         communicator.addNewAgentAddress(it)
                     }
