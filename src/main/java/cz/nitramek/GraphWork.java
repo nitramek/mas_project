@@ -5,32 +5,25 @@ import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.stream.Collectors;
-
 public class GraphWork {
 
     private final Graph graph;
 
     public GraphWork() {
         graph = new SingleGraph("Agents alive");
-        setGraphStyles(graph);
+//        setGraphStyles(graph);
 
     }
 
-    private static void setGraphStyles(Graph graph) {
-        try {
-            Path stylePath = Paths.get(Main.class.getClass().getResource("/styles.css").toURI());
-            String sheetAsStr = Files.lines(stylePath).collect(Collectors.joining());
-            graph.addAttribute("ui.stylesheet", sheetAsStr);
-        } catch (URISyntaxException | IOException e1) {
-            e1.printStackTrace();
-        }
-    }
+//    private static void setGraphStyles(Graph graph) {
+//        try {
+//            Path stylePath = Paths.get(Main.class.getClass().getResource("/styles.css").toURI());
+//            String sheetAsStr = Files.lines(stylePath).collect(Collectors.joining());
+//            graph.addAttribute("ui.stylesheet", sheetAsStr);
+//        } catch (URISyntaxException | IOException e1) {
+//            e1.printStackTrace();
+//        }
+//    }
 
     public void visible(boolean visibile) {
         graph.display(visibile);

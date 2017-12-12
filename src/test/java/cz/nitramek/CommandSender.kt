@@ -27,6 +27,7 @@ object Sender {
         val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //pavel
 //        sender.sendPacket(converter.objToStr(store), )
         sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
+        sendInitiation(mockSource, sender, converter)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
 //        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
@@ -64,5 +65,31 @@ object Sender {
         //        sender.sendPacket(converter.objToStr(store), from)
         sender.sendPacket(converter.objToJson(sendSendToMyself).toString(), from)
         //        sender.sendPacket(converter.objToJson(storeSomething).toString(), from)
+    }
+
+    fun sendInitiation(src: MessageHeader, sender: UDPSender, converter: MessagesConverter) {
+        val A = InetSocketAddress("192.168.43.125", 11112)
+        val B = InetSocketAddress("192.168.43.130", 11113)
+        val C = InetSocketAddress("192.168.43.56", 11114)
+        val D = InetSocketAddress("192.168.43.219", 11115)
+
+
+        val sendtoA = Send(src, A, converter.objToStr(Store(src, "Potato")))
+        val sendToB = Send(src, B, converter.objToStr(sendtoA))
+        val sendToC = Send(src, C, converter.objToStr(sendToB))
+        val sendToD = Send(src, D, converter.objToStr(sendToC))
+
+        println(converter.objToJson(sendToD))
+
+//        sender.sendPacket(converter.objToStr(sendToC), src.source)
+//        val sendToAAgain = Send(src, A, converter.objToStr(sendToC))
+
+        //posli C -> posli B -> posli A store
+
+        converter.objToStr(sendToC)
+
+//        val sendToB = Send(src, B, converter.objToStr(sendtoA))
+//        val sendToB = Send(src, B, converter.objToStr(sendtoA))
+//        val sendtoB = Send(src, InetSocketAddress("192.168.43.130", ))
     }
 }

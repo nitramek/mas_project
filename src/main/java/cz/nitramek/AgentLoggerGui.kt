@@ -25,7 +25,7 @@ class AgentLoggerGui : AgentWindow() {
         killAllBtn.setOnAction { _ -> agent?.killAllAgents() }
         controlPanel.children.add(killAllBtn)
         controlPanel.children.add(Button("Show graph").apply { setOnAction { graphWork.visible(true) } })
-        val infos = mutableListOf(AgentInfo("Nitramek"))
+        val infos = mutableListOf(AgentInfo("Nitramek"), AgentInfo("VojPat"), AgentInfo("Lojza"), AgentInfo("DRA0042"), AgentInfo("Ludva"))
         infosByTags = infos.associate { it.tag to it }
         infoLabels = infos.associate { it.tag to Label(it.format()) }
         controlPanel.children.addAll(infoLabels.map { it.value })
