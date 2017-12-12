@@ -2,6 +2,7 @@ package cz.nitramek.messaging
 
 import cz.nitramek.agent.MAX_RETRIES
 import cz.nitramek.agent.RESEND_DELAY
+import cz.nitramek.agent.SENDER_THREAD_COUNT
 import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
@@ -15,13 +16,16 @@ import java.util.concurrent.TimeUnit
 
 
 class UDPCommunicator : Communicator {
+    override fun sendImmediadly(message: Message, address: InetSocketAddress, acked: Boolean) {
+        prioritySender.sendPacket(converter.objToStr(message), address)
+    }
 
 
     private val log = LoggerFactory.getLogger(UDPCommunicator::class.java)!!
     private val messagesLog = LoggerFactory.getLogger("receivedMessages")!!
 
 
-    private val senderService: UDPSender = UDPSender()
+    private val senderService: UDPSender = UDPSender(SENDER_THREAD_COUNT)
     private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.nextFreePort())
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
@@ -37,9 +41,10 @@ class UDPCommunicator : Communicator {
 
     private val cleanerPool = Executors.newScheduledThreadPool(1)
 
+    private val prioritySender = UDPSender(1)
+
 
     init {
-
         receiverService.addMessageListener({ message: String ->
             val msg = converter.strToObj(message)
             addNewAgentAddress(msg.header)
@@ -119,6 +124,7 @@ class UDPCommunicator : Communicator {
     override fun stop() {
         log.info("Stopping {}", javaClass.name)
         senderService.shutdown()
+        prioritySender.shutdown()
         receiverService.shutdown()
         cleanerPool.shutdownNow()
     }
@@ -127,6 +133,7 @@ class UDPCommunicator : Communicator {
         log.info("Starting {}", javaClass.name)
         senderService.start()
         receiverService.start()
+        prioritySender.start()
     }
 
     inner class AckingTask(private val envelope: UDPCommunicator.Envelope) : Runnable {

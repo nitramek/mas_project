@@ -28,4 +28,6 @@ interface Communicator {
 
     val addressBook: Map<InetSocketAddress, Int>
     fun addNewAgentAddress(header: MessageHeader)
+
+    fun sendImmediadly(message: Message, address: InetSocketAddress, acked: Boolean)
 }

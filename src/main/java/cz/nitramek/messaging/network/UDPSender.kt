@@ -10,13 +10,13 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeUnit
 
-class UDPSender {
+class UDPSender(threadCount: Int = SENDER_THREAD_COUNT) {
 
     private val log = LoggerFactory.getLogger(this::class.java)!!
     private val messagesLog = LoggerFactory.getLogger("receivedMessages")!!
 
     private var channel: DatagramChannel? = null
-    private val pool = Executors.newScheduledThreadPool(SENDER_THREAD_COUNT)
+    private val pool = Executors.newScheduledThreadPool(threadCount)
 
     fun start() {
         channel = DatagramChannel.open()
@@ -32,11 +32,14 @@ class UDPSender {
 
 
     fun sendPacket(str: String, address: InetSocketAddress) {
-
         pool.schedule({
-            sendMessage(str, address)
-            messagesLog.trace("Senidng {} to", str, address)
+            sendImmediadly(str, address)
         }, ThreadLocalRandom.current().nextLong(10), TimeUnit.MILLISECONDS)
+    }
+
+    fun sendImmediadly(str: String, address: InetSocketAddress) {
+        sendMessage(str, address)
+        messagesLog.trace("Sending {} to", str, address)
     }
 
     fun shutdown() {

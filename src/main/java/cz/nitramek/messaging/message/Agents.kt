@@ -1,6 +1,6 @@
 package cz.nitramek.messaging.message
 
-class Agents(
+data class Agents(
         override val header: MessageHeader,
         val original: String = ""
 ) : Message {

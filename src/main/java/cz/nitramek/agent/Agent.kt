@@ -76,11 +76,11 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
         override fun handle(packageReceived: PackageReceived) {
             log.info("Look, he got a package! he: ${packageReceived.header}")
-            val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.canonicalHostName} ${loggerAddress?.port}")
-            for (i in 0..10) {
+            val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.hostAddress} ${loggerAddress?.port}")
+            for (i in 0..1) {
                 communicator.sendMessage(executeMsg, packageReceived.header.source, true)
             }
-            Thread.sleep(50)
+            Thread.sleep(700)
             communicator.sendMessage(Halt(localHeader), packageReceived.header.source, true)
         }
 
@@ -122,7 +122,8 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                 if (loggerAddress != null) {
                     val halterIp = halt.header.source.address.hostAddress
                     val halterPort = halt.header.source.port
-                    communicator.sendMessage(
+                    log.info("Sending Stop to logger")
+                    communicator.sendImmediadly(
                             Store(localHeader,
                                     "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
                             loggerAddress, true)
