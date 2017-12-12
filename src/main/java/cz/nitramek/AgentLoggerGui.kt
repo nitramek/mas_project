@@ -1,12 +1,12 @@
 package cz.nitramek
 
 import cz.nitramek.agent.LoggerMessageHandler
+import cz.nitramek.messaging.message.MessageHeader
 import cz.nitramek.messaging.message.Store
 import javafx.application.Platform
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.layout.HBox
-import java.net.InetSocketAddress
 
 class AgentLoggerGui : AgentWindow() {
     data class AgentInfo(val tag: String, var spawned: Int = 0, var died: Int = 0) {
@@ -36,21 +36,20 @@ class AgentLoggerGui : AgentWindow() {
         super.startAgent()
         val loggerHandler: LoggerMessageHandler = agent!!.messageHandler as LoggerMessageHandler
         loggerHandler.storeListeners.add(this::storeEvent)
-        graphWork.addNode(agent!!.localHeader.source.nodeId())
+        graphWork.addNode(agent!!.localHeader.nodeId())
     }
 
     private fun storeEvent(store: Store) {
         synchronized(this) {
             val info = infosByTags[store.header.tag]!!
             if (store.value.contains("START")) {
-                graphWork.addNode(store.header.source.nodeId())
+                graphWork.addNode(store.header.nodeId())
                 info.spawned++
-
             } else if (store.value.contains("END")) {
-                println(store.value)
                 val halterIpPort = store.value.substringAfter("by ").substringBefore(' ')
-                val nodeId = store.header.source.nodeId()
-                graphWork.addEdge(halterIpPort, nodeId, "Killed")
+                val halterTag = store.value.substringAfter("by ").substringAfter(' ')
+                val nodeId = store.header.nodeId()
+                graphWork.addEdge("${halterIpPort}_$halterTag", nodeId, "Killed")
                 graphWork.classifyNode(nodeId, "dead")
                 info.died++
             }
@@ -67,5 +66,7 @@ class AgentLoggerGui : AgentWindow() {
     }
 
 
-    fun InetSocketAddress.nodeId() = "$hostString:$port"
 }
+
+private fun MessageHeader.nodeId(): String = "${source.hostString}:${source.port}_$tag"
+

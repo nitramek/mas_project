@@ -10,5 +10,5 @@ const val AGENT_PACKAGE_NAME = "agent_nitramek.zip"
 const val AGENT_JAR_NAME = "agent_nitramek.jar"
 const val RECIEVED_PACKAGES_DIR = "receivedParts"
 const val CONFIG_FILE_NAME = "config.cfg"
-const val THIS_AGENT_TAG = "Nitramek"
+const val THIS_AGENT_TAG = "Logger"
 

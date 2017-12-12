@@ -30,9 +30,14 @@ public class GraphWork {
     }
 
     Node addNode(String id) {
-        Node node = graph.addNode(id);
-        node.addAttribute("ui.label", id);
-        return node;
+        try {
+            Node node = graph.addNode(id);
+            node.addAttribute("ui.label", id);
+            return node;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     void classifyNode(String id, String classz) {
@@ -40,9 +45,12 @@ public class GraphWork {
     }
 
     void addEdge(String node1, String node2, String label) {
-        Edge edge = graph.addEdge(node1 + node2, node1, node2, true);
-        edge.addAttribute("ui.label", label);
-
+        try {
+            Edge edge = graph.addEdge(node1 + node2, node1, node2, true);
+            edge.addAttribute("ui.label", label);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
