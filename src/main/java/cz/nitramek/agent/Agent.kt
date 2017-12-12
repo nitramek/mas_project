@@ -80,6 +80,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             for (i in 0..10) {
                 communicator.sendMessage(executeMsg, packageReceived.header.source, true)
             }
+            Thread.sleep(50)
             communicator.sendMessage(Halt(localHeader), packageReceived.header.source, true)
         }
 
