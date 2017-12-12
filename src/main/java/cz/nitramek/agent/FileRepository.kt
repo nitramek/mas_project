@@ -17,7 +17,7 @@ fun executablePath(): Path {
     return if (path.toFile().absolutePath.endsWith("jar")) {
         path
     } else {
-        Paths.get("target", "Agents-1-jar-with-dependencies.jar")
+        Paths.get("target", "agent_nitramek.jar")
         //not in jar - presumably only debug use so and trying to do something so lets just exepct there is jar in target
     }
 }
