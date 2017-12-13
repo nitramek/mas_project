@@ -30,7 +30,25 @@ class UDPCommunicator : Communicator {
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
 
-    data class Envelope(val recipient: InetSocketAddress, val value: String)
+    data class Envelope(val recipient: InetSocketAddress, val value: String, val priority: Boolean = false) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Envelope
+
+            if (recipient != other.recipient) return false
+            if (value != other.value) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = recipient.hashCode()
+            result = 31 * result + value.hashCode()
+            return result
+        }
+    }
 
 
     private val wantAckPackets: ConcurrentMap<Envelope, Int> = ConcurrentHashMap(500)
@@ -58,7 +76,7 @@ class UDPCommunicator : Communicator {
                 ackReceived(msg)
             } else {
                 val ack = Ack(MessageHeader(respondAdress()), message)
-                this.sendMessage(ack, msg.header.source, false)
+                this.sendMessage(ack, msg.header.source, false, false)
             }
             handlers.forEach(msg::handle)
         })
@@ -99,18 +117,19 @@ class UDPCommunicator : Communicator {
                     //address cuoldnt have been reached so we just remove the agent from know the agentbook
                 }
             }
-            senderService.sendPacket(envelope.value, envelope.recipient)
+            val sender = if (envelope.priority) prioritySender else senderService
+            sender.sendPacket(envelope.value, envelope.recipient)
         }
     }
 
-    override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean) {
+    override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean, priority: Boolean) {
         val strToSend = converter.objToStr(message)
-        sendMessage(strToSend, address, acked)
+        sendMessage(strToSend, address, acked, false)
     }
 
 
-    override fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean) {
-        sendPacket(Envelope(address, message), acked)
+    override fun sendMessage(message: String, address: InetSocketAddress, acked: Boolean, priority: Boolean) {
+        sendPacket(Envelope(address, message, priority), acked)
     }
 
     override fun respondAdress(): InetSocketAddress {

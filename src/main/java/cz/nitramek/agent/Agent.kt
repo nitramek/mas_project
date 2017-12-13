@@ -42,14 +42,14 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         if (loggerAddress != null) {
             communicator.sendMessage(Store(localHeader,
                     "START ${bindedAddress.address.hostAddress} ${bindedAddress.port} $THIS_AGENT_TAG"),
-                    loggerAddress, true)
+                    loggerAddress, true, false)
         }
         val configFile = Paths.get(CONFIG_FILE_NAME)
         if (Files.exists(configFile)) {
             val configFileLine = Files.readAllLines(configFile)[0]
             val parts = configFileLine.split(":")
             val pappaAddress = InetSocketAddress(parts[0], parts[1].toInt())
-            communicator.sendMessage(Agents(localHeader), pappaAddress, true)
+            communicator.sendMessage(Agents(localHeader), pappaAddress, true, false)
         }
     }
 
@@ -63,7 +63,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             addressBook.put(messageHeader.source, messageHeader)
             val duplicateRequest = Duplicate(localHeader, messageHeader.source)
             val sendMeDuplicate = Send(localHeader, bindedAddress, converter.objToStr(duplicateRequest))
-            communicator.sendMessage(sendMeDuplicate, messageHeader.source, true)
+            communicator.sendMessage(sendMeDuplicate, messageHeader.source, true, false)
         }
 
         override fun removedAgent(address: InetSocketAddress) {
@@ -78,10 +78,10 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
             log.info("Look, he got a package! he: ${packageReceived.header}")
             val executeMsg = Execute(localHeader, "java -jar $AGENT_JAR_NAME ${loggerAddress?.address?.hostAddress} ${loggerAddress?.port}")
             for (i in 0..1) {
-                communicator.sendMessage(executeMsg, packageReceived.header.source, true)
+                communicator.sendMessage(executeMsg, packageReceived.header.source, true, true)
             }
             Thread.sleep(700)
-            communicator.sendMessage(Halt(localHeader), packageReceived.header.source, true)
+            communicator.sendMessage(Halt(localHeader), packageReceived.header.source, true, false)
         }
 
         override fun handle(aPackage: Package) {
@@ -96,7 +96,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                     repository.savePackage(addressAsRepoName(source), partedPackage)
                     val myHeader = MessageHeader(communicator.respondAdress())
                     val resultMsg = PackageReceived(myHeader)
-                    communicator.sendMessage(resultMsg, source, true)
+                    communicator.sendMessage(resultMsg, source, true, false)
                 }
 //                val haltMsg = Halt(myHeader)
 //                communicator.sendMessage(haltMsg, source, false)
@@ -123,10 +123,10 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                     val halterIp = halt.header.source.address.hostAddress
                     val halterPort = halt.header.source.port
                     log.info("Sending Stop to logger")
-                    communicator.sendImmediadly(
+                    communicator.sendMessage(
                             Store(localHeader,
                                     "END   ${bindedAddress.address.hostAddress}:${bindedAddress.port} $THIS_AGENT_TAG by $halterIp:$halterPort ${halt.header.tag}"),
-                            loggerAddress, true)
+                            loggerAddress, true, true)
                 }
                 this@Agent.stop()
             }
@@ -147,7 +147,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                     MessageHeader(communicator.respondAdress()),
                     "sucess", gson.toJson(arrayOfAgents),
                     agents.original)
-            communicator.sendMessage(resultMsg, agents.header.source, true)
+            communicator.sendMessage(resultMsg, agents.header.source, true, false)
 
         }
 
@@ -175,7 +175,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
 
             val messageSendNoLocalParams = send.message
             val messageToSend = converter.addHeaderParams(messageSendNoLocalParams, localHeader)
-            communicator.sendMessage(messageToSend, send.recipient, true)
+            communicator.sendMessage(messageToSend, send.recipient, true, false)
         }
     }
 
@@ -183,7 +183,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         log.info("I will prevail thus logger am I! Killing all pesky agents")
         val halt = Halt(MessageHeader(localHeader.source, "Logger"))
         communicator.addressBook.forEach {
-            communicator.sendMessage(halt, it.key, true)
+            communicator.sendMessage(halt, it.key, true, false)
         }
     }
 
@@ -208,7 +208,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
                             index,
                             AGENT_PACKAGE_NAME,
                             repository.agentInParts.size
-                    ), recipient, true)
+                    ), recipient, true, false)
         }
     }
 

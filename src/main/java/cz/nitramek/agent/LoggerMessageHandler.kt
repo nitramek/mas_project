@@ -27,7 +27,7 @@ open class LoggerMessageHandler(val agent: Agent) : MessageHandler() {
         log.info("I will prevail thus logger am I! Killing all pesky agents")
         val halt = Halt(MessageHeader(agent.localHeader.source, "Logger"))
         agent.communicator.addressBook.forEach {
-            agent.communicator.sendMessage(halt, it.key, true)
+            agent.communicator.sendMessage(halt, it.key, true, false)
         }
     }
 
