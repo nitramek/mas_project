@@ -1,7 +1,6 @@
 package cz.nitramek.messaging.message
 
 import com.google.gson.JsonObject
-import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import cz.nitramek.messaging.message.Message.MessageType.*
 import org.slf4j.LoggerFactory
@@ -54,14 +53,9 @@ class MessagesConverter {
                 }
                 else -> return UnknownMessage(header, type, obj.toString())
             }
-        } catch (exception: JsonParseException) {
-            log.error(obj.toString())
-            log.error(exception.message, exception.printStackTrace())
+        } catch (exception: Exception) {
+            log.error(exception.message, exception)
             throw exception
-        } catch (e: NullPointerException) {
-            log.error(obj.toString())
-            log.error(e.message, e.printStackTrace())
-            throw e
         }
 
     }
