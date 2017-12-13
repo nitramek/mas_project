@@ -18,14 +18,18 @@ object NetworkUtils {
 
     //    fun localAddres() = "192.168.43.125"
     fun localAddres() = NetworkInterface.getNetworkInterfaces().asSequence()
-            .filter { !it.isVirtual }.
-            filter { !it.isLoopback }
+            .filter { !it.isVirtual }
+            .filter { !it.isLoopback }
             .filter { it.isUp }
             .filter { !isVmwareMac(it.hardwareAddress) }
-            .filter { it.inetAddresses.asSequence().filter { it !is Inet6Address }.count() > 0 }
-            .first().inetAddresses.asSequence().filter { !it.isLinkLocalAddress }.first()
+            .flatMap { it.inetAddresses.asSequence() }
+            .filter { it !is Inet6Address }
+            .filter { !it.isLinkLocalAddress }
+            .filter { it.hostAddress.contains(".10.") }
+            .first()
 
-    private fun isVmwareMac(mac: ByteArray): Boolean {
+    private fun isVmwareMac(mac: ByteArray?): Boolean {
+        if (mac == null) return false
         val invalidMacs = arrayOf(byteArrayOf(0x00, 0x05, 0x69), //VMWare
                 byteArrayOf(0x00, 0x1C, 0x14), //VMWare
                 byteArrayOf(0x00, 0x0C, 0x29), //VMWare
