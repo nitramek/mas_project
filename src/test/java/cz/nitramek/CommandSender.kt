@@ -1,5 +1,6 @@
 package cz.nitramek
 
+import cz.nitramek.agent.AGENT_JAR_NAME
 import cz.nitramek.agent.AGENT_PACKAGE_NAME
 import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPSender
@@ -14,7 +15,7 @@ object Sender {
     @JvmStatic
     fun main(args: Array<String>) {
         val sender = UDPSender()
-        val mockSource = MessageHeader(InetSocketAddress("127.0.0.1", 11111), tag = "Potato")
+        val mockSource = MessageHeader(InetSocketAddress("192.168.43.125", 11112), tag = "Nitramek")
         val converter = MessagesConverter()
         sender.start()
         val testAgentAddress = InetSocketAddress(NetworkUtils.localAddres(), 11111)
@@ -24,9 +25,11 @@ object Sender {
         val halt = Halt(mockSource)
         val execute = Execute(MessageHeader(testAgentAddress), "java -jar $AGENT_PACKAGE_NAME")
         val store = Store(MessageHeader(testAgentAddress, "potato"), "Hello")
-        val otherAgentAddress = InetSocketAddress("192.168.43.56", 9999) //pavel
+        val otherAgentAddress = InetSocketAddress("192.168.43.130", 22222) //pavel
+        val executeMsg = Execute(mockSource, "java -jar $AGENT_JAR_NAME 192.168.43.125 11111")
+        sender.sendPacket(converter.objToStr(executeMsg), otherAgentAddress)
 //        sender.sendPacket(converter.objToStr(store), )
-        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
+//        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        sender.sendPacket(converter.objToStr(store), testAgentAddress)
 //        sendPackageRequest(mockSource, testAgentAddress, otherAgentAddress, converter, sender)
 //        val otherAgentAddress = InetSocketAddress("192.168.43.130", 11111) //pavel
