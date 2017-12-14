@@ -6,7 +6,6 @@ import cz.nitramek.agent.SENDER_THREAD_COUNT
 import cz.nitramek.messaging.message.*
 import cz.nitramek.messaging.network.UDPReceiver
 import cz.nitramek.messaging.network.UDPSender
-import cz.nitramek.utils.NetworkUtils
 import org.slf4j.LoggerFactory
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
@@ -15,7 +14,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 
-class UDPCommunicator : Communicator {
+class UDPCommunicator(port: Int) : Communicator {
     override fun sendImmediadly(message: Message, address: InetSocketAddress, acked: Boolean) {
         prioritySender.sendPacket(converter.objToStr(message), address)
     }
@@ -26,7 +25,7 @@ class UDPCommunicator : Communicator {
 
 
     private val senderService: UDPSender = UDPSender(SENDER_THREAD_COUNT)
-    private val receiverService: UDPReceiver = UDPReceiver(NetworkUtils.nextFreePort())
+    private val receiverService: UDPReceiver = UDPReceiver(port)
     private val handlers: MutableList<MessageHandler> = ArrayList()
     private val converter: MessagesConverter = MessagesConverter()
 
@@ -124,7 +123,7 @@ class UDPCommunicator : Communicator {
 
     override fun sendMessage(message: Message, address: InetSocketAddress, acked: Boolean, priority: Boolean) {
         val strToSend = converter.objToStr(message)
-        sendMessage(strToSend, address, acked, false)
+        sendMessage(strToSend, address, acked, priority)
     }
 
 

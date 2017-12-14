@@ -1,6 +1,7 @@
 package cz.nitramek
 
 import cz.nitramek.agent.Agent
+import cz.nitramek.utils.NetworkUtils
 import javafx.application.Application
 import javafx.application.Platform
 import javafx.scene.Scene
@@ -73,7 +74,8 @@ open class AgentWindow : Application() {
     open fun startAgent() {
         val args = parameters.raw
         val loggerAddress = if (args.size >= 2) InetSocketAddress(args[0], args[1].toInt()) else null
-        agent = Agent(Platform::exit, loggerAddress).also(Agent::start)
+        val port = if (args.size >= 3) args[2].toInt() else NetworkUtils.nextFreePort()
+        agent = Agent(Platform::exit, loggerAddress, port).also(Agent::start)
         agentAddressLabel.text = agent?.bindedAddress.toString()
     }
 

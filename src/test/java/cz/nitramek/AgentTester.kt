@@ -2,6 +2,7 @@ package cz.nitramek
 
 import cz.nitramek.agent.Agent
 import cz.nitramek.messaging.network.UDPSender
+import cz.nitramek.utils.NetworkUtils
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -12,7 +13,7 @@ class AgentTester {
 
     companion object {
 
-        private val agent = Agent({})
+        private val agent = Agent({}, null, NetworkUtils.nextFreePort())
         private val sender = UDPSender()
 
         @BeforeClass

@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 
 //TODO přidávání agentů od kterých příjde jakákoliv message do známých adres a odebírání pokud na ně nedojde zpráva
-class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddress? = null) {
+class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddress? = null, val port: Int) {
 
     /**
      * Utilities
@@ -24,7 +24,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
     private val gson = Gson()
     private val converter = MessagesConverter()
 
-    val communicator: Communicator = UDPCommunicator()
+    val communicator: Communicator = UDPCommunicator(port)
 
     /**
      * State

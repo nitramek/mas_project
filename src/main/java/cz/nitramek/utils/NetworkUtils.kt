@@ -1,19 +1,19 @@
 package cz.nitramek.utils
 
-import java.net.BindException
 import java.net.DatagramSocket
 import java.net.Inet6Address
 import java.net.NetworkInterface
 
 object NetworkUtils {
 
-    fun nextFreePort(start: Int = 11111): Int {
+    fun nextFreePort(): Int {
 //        return 53156
-        return try {
-            DatagramSocket(start).use { it.localPort }
-        } catch (e: BindException) {
-            nextFreePort(start + 1)
-        }
+        return DatagramSocket().use { it.localPort }
+//        return try {
+//            DatagramSocket(start).use { it.localPort }
+//        } catch (e: BindException) {
+//            nextFreePort(start + 1)
+//        }
     }
 
     //    fun localAddres() = "192.168.43.125"
