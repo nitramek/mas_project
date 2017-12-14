@@ -25,7 +25,7 @@ object NetworkUtils {
             .flatMap { it.inetAddresses.asSequence() }
             .filter { it !is Inet6Address }
             .filter { !it.isLinkLocalAddress }
-            .filter { it.hostAddress.contains(".10.") }
+//            .filter { it.hostAddress.contains(".10.") }
             .first()
 
     private fun isVmwareMac(mac: ByteArray?): Boolean {
