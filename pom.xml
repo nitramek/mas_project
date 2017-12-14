@@ -92,27 +92,44 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4.1</version>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.0</version>
                 <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
+                    <minimizeJar>true</minimizeJar>
                     <finalName>${final.jar.name}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                    <archive>
-                        <manifest>
-                            <mainClass>${app.main.class}</mainClass>
-                        </manifest>
-                    </archive>
+                    <transformers>
+                        <transformer
+                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <manifestEntries>
+                                <Main-Class>${app.main.class}</Main-Class>
+                            </manifestEntries>
+                        </transformer>
+                    </transformers>
+                    <!--<descriptorRefs>-->
+                    <!--<descriptorRef>jar-with-dependencies</descriptorRef>-->
+                    <!--</descriptorRefs>-->
+                    <!--<finalName>${final.jar.name}</finalName>-->
+                    <!--<appendAssemblyId>false</appendAssemblyId>-->
+                    <!--<archive>-->
+                    <!--<manifest>-->
+                    <!--<mainClass>${app.main.class}</mainClass>-->
+                    <!--</manifest>-->
+                    <!--</archive>-->
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.google.guava</groupId>
+                        <artifactId>guava</artifactId>
+                        <version>23.1-jre</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
                         <!-- bind to the packaging phase -->
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
                     </execution>
                 </executions>
