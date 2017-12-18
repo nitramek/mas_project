@@ -20,6 +20,7 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
      * Utilities
      */
     private val log = LoggerFactory.getLogger(this::class.java)!!
+    private val received = LoggerFactory.getLogger("receivedMessages")
 
     private val gson = Gson()
     private val converter = MessagesConverter()
@@ -67,10 +68,12 @@ class Agent(val onStopListener: (() -> Unit), val loggerAddress: InetSocketAddre
         }
 
         override fun removedAgent(address: InetSocketAddress) {
+            received.info("Removed $address")
             addressBook.remove(address)
         }
 
         override fun handle(duplicate: Duplicate) {
+            received.info("Sending duplicate to ${duplicate.recipient}")
             sendMyself(duplicate.recipient)
         }
 
